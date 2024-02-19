@@ -8,9 +8,9 @@
 \documentclass[a4paper,11pt]{book}
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
-\usepackage[english,spanish,es-lcroman]{babel}
+%\usepackage[english,spanish,es-lcroman]{babel}
 \usepackage{bookman}
-\decimalpoint
+%\decimalpoint
 \usepackage{graphicx}
 \usepackage{amsfonts,amsgen,amsmath,amssymb}
 \usepackage[top=3cm, bottom=3cm, right=2.54cm, left=2.54cm]{geometry}
@@ -31,8 +31,6 @@
 \setlength{\headheight}{1.5\headheight}
 \cfoot{\thepage}
 
-\addto\captionsspanish{ \renewcommand{\contentsname}
-  {Tabla de contenidos} }
 \setcounter{tocdepth}{4}
 \setcounter{secnumdepth}{4}
 
@@ -42,8 +40,7 @@
 \newcommand{\bigrule}{\titlerule[0.5mm]}
 
 \usepackage{appendix}
-\renewcommand{\appendixname}{Anexos}
-\renewcommand{\appendixtocname}{Anexos}
+
 %\renewcommand{\appendixpagename}{Anexos}
 %%-----------------------------------------------
 %% Páginas en blanco sin cabecera:
@@ -51,7 +48,7 @@
 \usepackage{dcolumn}
 \newcolumntype{.}{D{.}{\esperiod}{-1}}
 \makeatletter
-\addto\shorthandsspanish{\let\esperiod\es@period@code}
+%\addto\shorthandsspanish{\let\esperiod\es@period@code}
 
 \def\clearpage{
   \ifvmode

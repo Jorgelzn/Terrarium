@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.25 (MiKTeX 24.1) (preloaded format=pdflatex 2024.2.19)  19 FEB 2024 22:15
+This is pdfTeX, Version 3.141592653-2.6-1.40.25 (MiKTeX 24.1) (preloaded format=pdflatex 2024.2.19)  20 FEB 2024 20:35
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -576,7 +576,7 @@ Package pdflscape Info: Auto-detected driver: pdftex on input line 81.
 ))
 \c@lstlisting=\count319
  (include/Portada.tex
-<include/EscUpm.png, id=54, 245.91875pt x 200.75pt>
+<include/EscUpm.png, id=66, 245.91875pt x 200.75pt>
 File: include/EscUpm.png Graphic file (type png)
 <use include/EscUpm.png>
 Package pdftex.def Info: include/EscUpm.png  used on input line 12.
@@ -608,7 +608,7 @@ LaTeX Font Info:    Font shape `T1/pbk/m/n' in size <14.4> not available
 (Font)              Font shape `T1/pbk/l/n' tried instead on input line 18.
 LaTeX Font Info:    Font shape `T1/pbk/b/n' in size <14.4> not available
 (Font)              Font shape `T1/pbk/db/n' tried instead on input line 19.
-<include/FacInformatica.png, id=56, 160.6pt x 170.6375pt>
+<include/FacInformatica.png, id=68, 160.6pt x 170.6375pt>
 File: include/FacInformatica.png Graphic file (type png)
 <use include/FacInformatica.png>
 Package pdftex.def Info: include/FacInformatica.png  used on input line 23.
@@ -663,87 +663,74 @@ LaTeX Font Info:    Font shape `T1/pbk/b/n' in size <10.95> not available
 ]
 (secciones/01_Introduccion.tex
 Chapter 1.
-LaTeX Font Info:    Trying to load font information for TS1+pbk on input line 8
-.
-(C:\Users\Usuario\AppData\Local\Programs\MiKTeX\tex/latex/psnfss\ts1pbk.fd
-File: ts1pbk.fd 2001/06/04 font definitions for TS1/pbk.
-)
-LaTeX Font Info:    Font shape `TS1/pbk/m/n' in size <10.95> not available
-(Font)              Font shape `TS1/pbk/l/n' tried instead on input line 8.
-LaTeX Font Info:    Font shape `T1/pbk/m/it' in size <10.95> not available
-(Font)              Font shape `T1/pbk/l/it' tried instead on input line 22.
-
+LaTeX Info: Symbol \textasciiacute not provided by
+            font family pbk in TS1 encoding.
+            Default family used instead on input line 8.
+) (secciones/02_Desarrollo.tex
 pdfTeX warning (ext4): destination with the same identifier (name{page.1}) has 
 been already used, duplicate ignored
 <to be read again> 
                    \relax 
-l.30 \end{itemize}
-                   [1
+l.1 \chapter
+            {Master’s Project Content} [1
 
 ]
-LaTeX Font Info:    Trying to load font information for T1+pcr on input line 35
-.
-
-(C:\Users\Usuario\AppData\Local\Programs\MiKTeX\tex/latex/psnfss\t1pcr.fd
-File: t1pcr.fd 2001/06/04 font definitions for T1/pcr.
-)
-LaTeX Font Info:    Font shape `T1/pbk/m/n' in size <8> not available
-(Font)              Font shape `T1/pbk/l/n' tried instead on input line 36.
-
-(C:\Users\Usuario\AppData\Local\Programs\MiKTeX\tex/latex/listings\lstlang1.sty
-File: lstlang1.sty 2023/02/27 1.9 listings language file
-)
-LaTeX Font Info:    Font shape `T1/pbk/m/n' in size <6> not available
-(Font)              Font shape `T1/pbk/l/n' tried instead on input line 48.
-) (secciones/02_Desarrollo.tex
 pdfTeX warning (ext4): destination with the same identifier (name{page.2}) has 
 been already used, duplicate ignored
 <to be read again> 
                    \relax 
 l.1 \chapter
-            {Master’s Project Content} [2]
+            {Master’s Project Content} [2
+
+]
 Chapter 2.
 LaTeX Font Info:    Font shape `T1/pbk/b/n' in size <12> not available
-(Font)              Font shape `T1/pbk/db/n' tried instead on input line 11.
-) (secciones/03_Resultados.tex [3
-
-] [4
+(Font)              Font shape `T1/pbk/db/n' tried instead on input line 6.
+) (secciones/03_Resultados.tex [3] [4
 
 ]
 Chapter 3.
 ) (secciones/04_Bibliografia.tex [5] [6
 
-]) [7] (secciones/05_Anexos.tex [8
+]
+LaTeX Font Info:    Font shape `T1/pbk/m/it' in size <10.95> not available
+(Font)              Font shape `T1/pbk/l/it' tried instead on input line 3.
+LaTeX Font Info:    Trying to load font information for TS1+pbk on input line 3
+.
+
+(C:\Users\Usuario\AppData\Local\Programs\MiKTeX\tex/latex/psnfss\ts1pbk.fd
+File: ts1pbk.fd 2001/06/04 font definitions for TS1/pbk.
+)
+LaTeX Font Info:    Font shape `TS1/pbk/m/it' in size <10.95> not available
+(Font)              Font shape `TS1/pbk/l/it' tried instead on input line 3.
+)
+[7] (secciones/05_Anexos.tex [8
 
 
-])
-[9] (TFM.aux)
+]) [9] (TFM.aux)
  ***********
 LaTeX2e <2023-11-01> patch level 1
 L3 programming layer <2024-01-04>
  ***********
 Package rerunfilecheck Info: File `TFM.out' has not changed.
-(rerunfilecheck)             Checksum: 7E8F0264DB7B9DCC2D878489CF29B380;2041.
+(rerunfilecheck)             Checksum: 55E9C7980D7CF3C55788AE7C46E8411B;2336.
  ) 
 Here is how much of TeX's memory you used:
- 14159 strings out of 474486
- 217444 string characters out of 5742811
- 1950542 words of memory out of 5000000
- 36139 multiletter control sequences out of 15000+600000
- 587567 words of font info for 95 fonts, out of 8000000 for 9000
+ 13686 strings out of 474486
+ 212930 string characters out of 5742811
+ 1931542 words of memory out of 5000000
+ 35682 multiletter control sequences out of 15000+600000
+ 583120 words of font info for 86 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
- 80i,11n,82p,545b,1329s stack positions out of 10000i,1000n,20000p,200000b,200000s
-<C:/Users/Usuario/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/c
-m/cmmi10.pfb><C:/Users/Usuario/AppData/Local/Programs/MiKTeX/fonts/type1/public
-/amsfonts/cm/cmr10.pfb><C:/Users/Usuario/AppData/Local/Programs/MiKTeX/fonts/ty
-pe1/urw/bookman/ubkd8a.pfb><C:/Users/Usuario/AppData/Local/Programs/MiKTeX/font
-s/type1/urw/bookman/ubkl8a.pfb><C:/Users/Usuario/AppData/Local/Programs/MiKTeX/
-fonts/type1/urw/bookman/ubkli8a.pfb><C:/Users/Usuario/AppData/Local/Programs/Mi
-KTeX/fonts/type1/urw/courier/ucrb8a.pfb><C:/Users/Usuario/AppData/Local/Program
-s/MiKTeX/fonts/type1/urw/courier/ucrr8a.pfb>
-Output written on TFM.pdf (17 pages, 205130 bytes).
+ 80i,7n,82p,545b,509s stack positions out of 10000i,1000n,20000p,200000b,200000s
+ <C:\Users\Usuario\AppData\Local\MiKTeX\fonts/pk/ljfour/jknappen/ec/dpi600\tc
+rm1095.pk><C:/Users/Usuario/AppData/Local/Programs/MiKTeX/fonts/type1/urw/bookm
+an/ubkd8a.pfb><C:/Users/Usuario/AppData/Local/Programs/MiKTeX/fonts/type1/urw/b
+ookman/ubkl8a.pfb><C:/Users/Usuario/AppData/Local/Programs/MiKTeX/fonts/type1/u
+rw/bookman/ubkli8a.pfb>
+Output written on TFM.pdf (17 pages, 165150 bytes).
 PDF statistics:
- 208 PDF objects out of 1000 (max. 8388607)
- 42 named destinations out of 1000 (max. 500000)
- 115 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 203 PDF objects out of 1000 (max. 8388607)
+ 38 named destinations out of 1000 (max. 500000)
+ 139 words of extra memory for PDF output out of 10000 (max. 10000000)
 

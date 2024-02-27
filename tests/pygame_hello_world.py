@@ -10,6 +10,10 @@ dt = 0.01
 
 player_pos = pygame.Vector2(screen.get_width() / 2, screen.get_height() / 2)
 
+
+ 
+
+
 while running:
     # poll for events
     # pygame.QUIT event means the user clicked X to close your window
@@ -18,10 +22,11 @@ while running:
             running = False
 
     # fill the screen with a color to wipe away anything from last frame
-    screen.fill("purple")
+    screen.fill("white")
 
     # RENDER YOUR GAME HERE
-    pygame.draw.circle(screen, "red", player_pos, 40)
+    pygame.draw.circle(screen, "black", player_pos, 40,3)
+
 
     keys = pygame.key.get_pressed()
     if keys[pygame.K_w]:

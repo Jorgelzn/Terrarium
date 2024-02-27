@@ -58,7 +58,7 @@ if __name__=="__main__":
 
 
         line_end[0] = player_pos[0] + math.cos(angle) * (mouse_pos[0] - player_pos[0]) - math.sin(angle) * (mouse_pos[1] - player_pos[1])
-        line_end[1] = player_pos[1] + math.sin(angle) * (mouse_pos[0] - player_pos[0]) - math.cosgit st(angle) * (mouse_pos[1] - player_pos[1])
+        line_end[1] = player_pos[1] + math.sin(angle) * (mouse_pos[0] - player_pos[0]) - math.cos(angle) * (mouse_pos[1] - player_pos[1])
         #line_end[0] += np.cos(math.radians(angle)) * radar_len
         #line_end[1] += np.sin(math.radians(angle)) * radar_len
 

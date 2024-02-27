@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.25 (MiKTeX 24.1) (preloaded format=pdflatex 2024.2.19)  20 FEB 2024 20:35
+This is pdfTeX, Version 3.141592653-2.6-1.40.25 (MiKTeX 24.1) (preloaded format=pdflatex 2024.2.19)  22 FEB 2024 11:29
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -666,6 +666,11 @@ Chapter 1.
 LaTeX Info: Symbol \textasciiacute not provided by
             font family pbk in TS1 encoding.
             Default family used instead on input line 8.
+LaTeX Info: Symbol \textasciiacute not provided by
+            font family pbk in TS1 encoding.
+            Default family used instead on input line 14.
+LaTeX Font Info:    Font shape `T1/pbk/b/n' in size <12> not available
+(Font)              Font shape `T1/pbk/db/n' tried instead on input line 26.
 ) (secciones/02_Desarrollo.tex
 pdfTeX warning (ext4): destination with the same identifier (name{page.1}) has 
 been already used, duplicate ignored
@@ -680,13 +685,11 @@ been already used, duplicate ignored
 <to be read again> 
                    \relax 
 l.1 \chapter
-            {Master’s Project Content} [2
-
-]
+            {Master’s Project Content} [2]
 Chapter 2.
-LaTeX Font Info:    Font shape `T1/pbk/b/n' in size <12> not available
-(Font)              Font shape `T1/pbk/db/n' tried instead on input line 6.
-) (secciones/03_Resultados.tex [3] [4
+) (secciones/03_Resultados.tex [3
+
+] [4
 
 ]
 Chapter 3.
@@ -712,25 +715,32 @@ LaTeX Font Info:    Font shape `TS1/pbk/m/it' in size <10.95> not available
 LaTeX2e <2023-11-01> patch level 1
 L3 programming layer <2024-01-04>
  ***********
-Package rerunfilecheck Info: File `TFM.out' has not changed.
-(rerunfilecheck)             Checksum: 55E9C7980D7CF3C55788AE7C46E8411B;2336.
+
+
+Package rerunfilecheck Warning: File `TFM.out' has changed.
+(rerunfilecheck)                Rerun to get outlines right
+(rerunfilecheck)                or use package `bookmark'.
+
+Package rerunfilecheck Info: Checksums for `TFM.out':
+(rerunfilecheck)             Before: 55E9C7980D7CF3C55788AE7C46E8411B;2336
+(rerunfilecheck)             After:  DE474CD994BB4F50DA3B24683992334B;2773.
  ) 
 Here is how much of TeX's memory you used:
- 13686 strings out of 474486
- 212930 string characters out of 5742811
+ 13689 strings out of 474486
+ 212978 string characters out of 5742811
  1931542 words of memory out of 5000000
  35682 multiletter control sequences out of 15000+600000
  583120 words of font info for 86 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
- 80i,7n,82p,545b,509s stack positions out of 10000i,1000n,20000p,200000b,200000s
+ 80i,11n,82p,663b,509s stack positions out of 10000i,1000n,20000p,200000b,200000s
  <C:\Users\Usuario\AppData\Local\MiKTeX\fonts/pk/ljfour/jknappen/ec/dpi600\tc
 rm1095.pk><C:/Users/Usuario/AppData/Local/Programs/MiKTeX/fonts/type1/urw/bookm
 an/ubkd8a.pfb><C:/Users/Usuario/AppData/Local/Programs/MiKTeX/fonts/type1/urw/b
 ookman/ubkl8a.pfb><C:/Users/Usuario/AppData/Local/Programs/MiKTeX/fonts/type1/u
 rw/bookman/ubkli8a.pfb>
-Output written on TFM.pdf (17 pages, 165150 bytes).
+Output written on TFM.pdf (17 pages, 166598 bytes).
 PDF statistics:
- 203 PDF objects out of 1000 (max. 8388607)
- 38 named destinations out of 1000 (max. 500000)
+ 206 PDF objects out of 1000 (max. 8388607)
+ 41 named destinations out of 1000 (max. 500000)
  139 words of extra memory for PDF output out of 10000 (max. 10000000)
 

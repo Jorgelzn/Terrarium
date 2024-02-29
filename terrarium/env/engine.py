@@ -12,7 +12,8 @@ velocity_constant=2
 friction = 0.1
 player_pos = np.array([screen.get_width() / 2, screen.get_height() / 2])
 player_radius = 40
-radar_len = 50
+radar_len = 100
+direction = 0
 line_end =player_pos+radar_len
 
 
@@ -24,45 +25,34 @@ if __name__=="__main__":
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
-
+        velocity_front=0
+        velocity_side=0
+        perpendicular=direction
         #MOVEMENT KEYS
-        #keys = pygame.key.get_pressed()
-        #if keys[pygame.K_w]:
-        #    dv[1]=-velocity_constant
-        #if keys[pygame.K_s]:
-        #    dv[1]=velocity_constant
-        #if keys[pygame.K_a]:
-        #    dv[0]=-velocity_constant
-        #if keys[pygame.K_d]:
-        #    dv[0]=velocity_constant
+        keys = pygame.key.get_pressed()
+        if keys[pygame.K_w]:
+            velocity_front=velocity_constant
+        if keys[pygame.K_s]:
+            velocity_front=-velocity_constant
+        if keys[pygame.K_a]:
+            velocity_side=velocity_constant
+            perpendicular = direction+90
+        if keys[pygame.K_d]:
+            velocity_side=velocity_constant
+            perpendicular = direction-90
+        if keys[pygame.K_LEFT]:
+            direction+=1
+        if keys[pygame.K_RIGHT]:
+            direction-=1
 
-        #DIRECTIONAL MOVEMENT
+        rad_front = np.deg2rad(direction)
+        rad_side= np.deg2rad(perpendicular)
 
-        #ANGLES
-
-        mouse_pos = pygame.mouse.get_pos()
-        if mouse_pos[0]>player_pos[0]:
-            dv[0]=velocity_constant
-        if mouse_pos[0]<player_pos[0]:
-            dv[0]=-velocity_constant
-        if mouse_pos[1]>player_pos[1]:
-            dv[1]=velocity_constant
-        if mouse_pos[1]<player_pos[1]:
-            dv[1]=-velocity_constant
-
-        angle = np.arctan2(player_pos[1]-mouse_pos[1],mouse_pos[0]-player_pos[0])
-        angle = np.rad2deg(angle)
-        if angle<0:
-            angle+=360
-        print(angle)
-
-
-        line_end[0] = player_pos[0] + math.cos(angle) * (mouse_pos[0] - player_pos[0]) - math.sin(angle) * (mouse_pos[1] - player_pos[1])
-        line_end[1] = player_pos[1] + math.sin(angle) * (mouse_pos[0] - player_pos[0]) - math.cos(angle) * (mouse_pos[1] - player_pos[1])
-        #line_end[0] += np.cos(math.radians(angle)) * radar_len
-        #line_end[1] += np.sin(math.radians(angle)) * radar_len
-
-        #player_pos+=dv
+        line_end[0] = player_pos[0] + radar_len*math.cos(rad_front)
+        line_end[1] = player_pos[1] - radar_len*math.sin(rad_front)
+        dv[0]=velocity_front*math.cos(rad_front) + velocity_side*math.cos(rad_side)
+        dv[1]=-velocity_front*math.sin(rad_front) - velocity_side*math.sin(rad_side)
+        player_pos+=dv
 
         if dv[0]>0:
             dv[0]-=friction

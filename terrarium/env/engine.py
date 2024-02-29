@@ -8,7 +8,7 @@ screen = pygame.display.set_mode((1280, 500))
 clock = pygame.time.Clock()
 running = True
 dv = np.zeros(2)
-velocity_constant=2
+velocity_constant=10
 friction = 0.1
 player_pos = np.array([screen.get_width() / 2, screen.get_height() / 2])
 player_radius = 40
@@ -25,43 +25,48 @@ if __name__=="__main__":
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
+
         velocity_front=0
         velocity_side=0
         perpendicular=direction
-        #MOVEMENT KEYS
-        keys = pygame.key.get_pressed()
-        if keys[pygame.K_w]:
-            velocity_front=velocity_constant
-        if keys[pygame.K_s]:
-            velocity_front=-velocity_constant
-        if keys[pygame.K_a]:
-            velocity_side=velocity_constant
-            perpendicular = direction+90
-        if keys[pygame.K_d]:
-            velocity_side=velocity_constant
-            perpendicular = direction-90
-        if keys[pygame.K_LEFT]:
-            direction+=1
-        if keys[pygame.K_RIGHT]:
-            direction-=1
-
         rad_front = np.deg2rad(direction)
         rad_side= np.deg2rad(perpendicular)
 
         line_end[0] = player_pos[0] + radar_len*math.cos(rad_front)
         line_end[1] = player_pos[1] - radar_len*math.sin(rad_front)
-        dv[0]=velocity_front*math.cos(rad_front) + velocity_side*math.cos(rad_side)
-        dv[1]=-velocity_front*math.sin(rad_front) - velocity_side*math.sin(rad_side)
-        player_pos+=dv
 
-        if dv[0]>0:
-            dv[0]-=friction
-        elif dv[0]<0:
-            dv[0]+=friction
-        if dv[1]>0:
-            dv[1]-=friction
-        elif dv[1]<0:
-            dv[1]+=friction
+        #MOVEMENT ACTIONS
+        keys = pygame.key.get_pressed()
+        movements = [pygame.K_w, pygame.K_s, pygame.K_a, pygame.K_d,]
+        if True in [keys[k] for k in movements]:
+            if keys[pygame.K_w]:
+                velocity_front=velocity_constant
+            if keys[pygame.K_s]:
+                velocity_front=-velocity_constant
+            if keys[pygame.K_a]:
+                velocity_side=velocity_constant
+                perpendicular = direction+90
+            if keys[pygame.K_d]:
+                velocity_side=velocity_constant
+                perpendicular = direction-90
+
+            dv[0]=velocity_front*math.cos(rad_front) + velocity_side*math.cos(rad_side)
+            dv[1]=-velocity_front*math.sin(rad_front) - velocity_side*math.sin(rad_side)
+        else:
+            if keys[pygame.K_LEFT]:
+                direction+=1
+            if keys[pygame.K_RIGHT]:
+                direction-=1
+            if dv[0]>0:
+                dv[0]-=friction
+            elif dv[0]<0:
+                dv[0]+=friction
+            if dv[1]>0:
+                dv[1]-=friction
+            elif dv[1]<0:
+                dv[1]+=friction
+
+        player_pos+=dv
 
         # fill the screen with a color to wipe away anything from last frame
         screen.fill("white")

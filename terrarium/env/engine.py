@@ -75,9 +75,19 @@ if __name__=="__main__":
 
         player_pos+=dv
 
+        line_color = "black"
+        line_collide = obstacle.clipline(player_pos,line_end)
+        if line_collide:
+            line_color="red"
+            line_end[0]=line_collide[0][0]
+            line_end[1]=line_collide[0][1]
+            print(np.sqrt((player_pos[0]-line_end[0])**2+(player_pos[1]-line_end[1])**2)-player_radius)
+        
         # RENDER YOUR GAME HERE
         pygame.draw.circle(screen, "black", player_pos, player_radius,3)
-        pygame.draw.aaline(screen, "black", player_pos,line_end)
+        pygame.draw.aaline(screen, line_color, player_pos,line_end)
+
+
         velocity_front=0
         velocity_side=0
         perpendicular=direction

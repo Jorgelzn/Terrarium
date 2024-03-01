@@ -8,12 +8,13 @@ screen = pygame.display.set_mode((1280, 500))
 clock = pygame.time.Clock()
 running = True
 dv = np.zeros(2)
-velocity_constant=10
+velocity_constant=3
 friction = 0.1
 player_pos = np.array([screen.get_width() / 2, screen.get_height() / 2])
 player_radius = 40
 radar_len = 100
 direction = 0
+perpendicular=direction
 line_end =player_pos+radar_len
 
 
@@ -26,12 +27,7 @@ if __name__=="__main__":
             if event.type == pygame.QUIT:
                 running = False
 
-        velocity_front=0
-        velocity_side=0
-        perpendicular=direction
         rad_front = np.deg2rad(direction)
-        rad_side= np.deg2rad(perpendicular)
-
         line_end[0] = player_pos[0] + radar_len*math.cos(rad_front)
         line_end[1] = player_pos[1] - radar_len*math.sin(rad_front)
 
@@ -50,21 +46,22 @@ if __name__=="__main__":
                 velocity_side=velocity_constant
                 perpendicular = direction-90
 
+            rad_side= np.deg2rad(perpendicular)
             dv[0]=velocity_front*math.cos(rad_front) + velocity_side*math.cos(rad_side)
             dv[1]=-velocity_front*math.sin(rad_front) - velocity_side*math.sin(rad_side)
-        else:
-            if keys[pygame.K_LEFT]:
-                direction+=1
-            if keys[pygame.K_RIGHT]:
-                direction-=1
-            if dv[0]>0:
-                dv[0]-=friction
-            elif dv[0]<0:
-                dv[0]+=friction
-            if dv[1]>0:
-                dv[1]-=friction
-            elif dv[1]<0:
-                dv[1]+=friction
+        
+        if keys[pygame.K_LEFT]:
+            direction+=1
+        if keys[pygame.K_RIGHT]:
+            direction-=1
+        if dv[0]>0:
+            dv[0]-=friction
+        elif dv[0]<0:
+            dv[0]+=friction
+        if dv[1]>0:
+            dv[1]-=friction
+        elif dv[1]<0:
+            dv[1]+=friction
 
         player_pos+=dv
 
@@ -74,6 +71,10 @@ if __name__=="__main__":
         # RENDER YOUR GAME HERE
         pygame.draw.circle(screen, "black", player_pos, player_radius,3)
         pygame.draw.aaline(screen, "black", player_pos,line_end)
+
+        velocity_front=0
+        velocity_side=0
+        perpendicular=direction
 
         # flip() the display to put your work on screen
         pygame.display.flip()

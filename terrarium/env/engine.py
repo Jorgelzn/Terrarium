@@ -17,24 +17,29 @@ class Agent():
         self.direction = np.deg2rad(direction)
         self.radius = radius
         self.vision_len = vision_len
-        self.vision = np.zeros(2)
-        self.vision[0] = self.pos[0] + self.vision_len*math.cos(self.direction)
-        self.vision[1] = self.pos[1] - self.vision_len*math.sin(self.direction)
-        self.vision_color = "black"
+        self.vision = np.zeros((11,2))
+        self.vision_color = np.empty((11), dtype=object)
+        self.collision_distance = np.zeros((11))
+        for idx,vision in enumerate(self.vision):
+            self.vision[idx][0] = self.pos[0] + self.vision_len*math.cos(self.direction+np.deg2rad((idx-5)*10))
+            self.vision[idx][1] = self.pos[1] - self.vision_len*math.sin(self.direction+np.deg2rad((idx-5)*10))
+            self.vision_color[idx] = "black"
+            self.collision_distance[idx] = 999
         self.agent_color = "black"
         self.collision_rect = pygame.Rect(self.pos[0]-self.radius,self.pos[1]-self.radius,self.radius*2,self.radius*2)
-        self.collision_distance = 999
         self.dv = np.zeros(2)
 
     def draw(self):
         pygame.draw.circle(screen, self.agent_color, self.pos, self.radius,3)
-        pygame.draw.aaline(screen, self.vision_color, self.pos,self.vision)
-        pygame.draw.rect(screen,"black",self.collision_rect,1)
+        #pygame.draw.rect(screen,"black",self.collision_rect,1)
+        for idx,vision in enumerate(self.vision):
+            pygame.draw.aaline(screen, self.vision_color[idx], self.pos,vision)
 
     def update(self):
         self.pos += self.dv
-        self.vision[0] = self.pos[0] + self.vision_len*math.cos(self.direction)
-        self.vision[1] = self.pos[1] - self.vision_len*math.sin(self.direction)
+        for idx,vision in enumerate(self.vision):
+            self.vision[idx][0] = self.pos[0] + self.vision_len*math.cos(self.direction+np.deg2rad((idx-5)*10))
+            self.vision[idx][1] = self.pos[1] - self.vision_len*math.sin(self.direction+np.deg2rad((idx-5)*10))
         self.collision_rect = pygame.Rect(self.pos[0]-self.radius,self.pos[1]-self.radius,self.radius*2,self.radius*2)
 
     def move(self,keys):
@@ -97,14 +102,14 @@ if __name__=="__main__":
 
         adan.update()
 
-        line_color = "black"
-        line_collide = obstacle.clipline(adan.pos,adan.vision)
-        if line_collide:
-            adan.vision_color="red"
-            adan.vision=np.array(line_collide[0])
-            adan.collision_distance = np.sqrt((adan.pos[0]-adan.vision[0])**2+(adan.pos[1]-adan.vision[1])**2)-adan.radius
-        else:
-            adan.vision_color="black"
+        for idx,vision in enumerate(adan.vision):
+            line_collide = obstacle.clipline(adan.pos,vision)
+            if line_collide:
+                adan.vision_color[idx]="red"
+                adan.vision[idx]=np.array(line_collide[0])
+                adan.collision_distance[idx] = np.sqrt((adan.pos[0]-vision[0])**2+(adan.pos[1]-vision[1])**2)-adan.radius
+            else:
+                adan.vision_color[idx]="black"
 
         # RENDER YOUR GAME HERE
         adan.draw()

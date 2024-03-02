@@ -23,6 +23,7 @@ class Agent():
         self.vision_color = "black"
         self.agent_color = "black"
         self.collision_rect = pygame.Rect(self.pos[0]-self.radius,self.pos[1]-self.radius,self.radius*2,self.radius*2)
+        self.collision_distance = 999
         self.dv = np.zeros(2)
 
     def draw(self):
@@ -88,8 +89,8 @@ if __name__=="__main__":
 
         #MOVEMENT ACTIONS
         keys = pygame.key.get_pressed()
-        collide = obstacle.colliderect(adan.collision_rect)
-        if not collide:
+        block_collide = obstacle.colliderect(adan.collision_rect)
+        if not block_collide:
             adan.move(keys)
         else:
             adan.dv = -adan.dv
@@ -101,7 +102,7 @@ if __name__=="__main__":
         if line_collide:
             adan.vision_color="red"
             adan.vision=np.array(line_collide[0])
-            collision_distance = np.sqrt((adan.pos[0]-adan.vision[0])**2+(adan.pos[1]-adan.vision[1])**2)-adan.radius
+            adan.collision_distance = np.sqrt((adan.pos[0]-adan.vision[0])**2+(adan.pos[1]-adan.vision[1])**2)-adan.radius
         else:
             adan.vision_color="black"
 

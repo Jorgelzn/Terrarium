@@ -30,10 +30,10 @@ class Agent():
         self.dv = np.zeros(2)
 
     def draw(self):
-        pygame.draw.circle(screen, self.agent_color, self.pos, self.radius,3)
         #pygame.draw.rect(screen,"black",self.collision_rect,1)
         for idx,vision in enumerate(self.vision):
             pygame.draw.aaline(screen, self.vision_color[idx], self.pos,vision)
+        pygame.draw.circle(screen, self.agent_color, self.pos, self.radius,0)
 
     def update(self):
         self.pos += self.dv

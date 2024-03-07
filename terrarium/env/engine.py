@@ -2,6 +2,7 @@
 import pygame
 import numpy as np
 import math
+import random
 
 pygame.init()
 screen = pygame.display.set_mode((1280, 500))
@@ -108,8 +109,31 @@ class Agent(Entity):
 
 if __name__=="__main__":
 
-    adan = Agent(np.array([screen.get_width() / 2, screen.get_height() / 2]),40,4,90,200,"black")
-    elements = [Obstacle(np.array([600,400]), np.array([200,100]), "black"),Food(np.array([400,400]),30,"green")]
+    environment = {
+        "agents":1,
+        "obstacles":10,
+        "food":5
+    }
+
+    elements = []
+
+    for obj_def in environment:
+        for obj_num in range(environment[obj_def]):
+            created = False
+            while not created:
+                pos = np.array([random.uniform(0,screen.get_width()), random.uniform(0,screen.get_height())])
+                if obj_def ==  "agents":
+                    obj = Agent(pos,40,4,random.randint(0, 360),200,"black")
+                elif obj_def == "obstacles":
+                    obj = Obstacle(pos, np.array([random.uniform(0,300),random.uniform(0,300)]), "black")
+                elif obj_def == "food":
+                    obj = Food(pos,30,"green")
+                collisions = [elem for elem in elements if elem.collision_rect.colliderect(obj.collision_rect)]
+                if not collisions:
+                        elements.append(obj)
+                        created = True
+
+    adan = elements.pop(0)
 
     while running:
         # fill the screen with a color to wipe away anything from last frame

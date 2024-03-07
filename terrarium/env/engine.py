@@ -164,6 +164,7 @@ if __name__=="__main__":
             agent.update()
 
             for idx,vision in enumerate(agent.vision):
+                collided = False
                 for elem in elements:
                     if elem!=agent:
                         line_collide = elem.collision_rect.clipline(agent.pos,vision) 
@@ -171,10 +172,10 @@ if __name__=="__main__":
                             agent.vision_color[idx]="red"
                             agent.vision[idx]=np.array(line_collide[0])
                             agent.collision_distance[idx] = np.sqrt((agent.pos[0]-vision[0])**2+(agent.pos[1]-vision[1])**2)-agent.radius
-                            break
-                        else:
-                            agent.vision_color[idx]="black"
-                            agent.collision_distance[idx]=999
+                            collided=True
+                if not collided:
+                    agent.vision_color[idx]="black"
+                    agent.collision_distance[idx]=999
 
         for elem in elements:
             elem.draw()

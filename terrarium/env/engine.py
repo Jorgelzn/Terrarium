@@ -110,7 +110,7 @@ class Agent(Entity):
 if __name__=="__main__":
 
     environment = {
-        "agents":1,
+        "agents":2,
         "obstacles":10,
         "food":5
     }
@@ -133,13 +133,13 @@ if __name__=="__main__":
                         elements.append(obj)
                         created = True
 
-    adan = elements.pop(0)
 
     while running:
-        # fill the screen with a color to wipe away anything from last frame
+
+        # clean screen
         screen.fill("white")
-        # poll for events
-        # pygame.QUIT event means the user clicked X to close your window
+
+        #check if exit button is pressed in window
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
@@ -147,43 +147,42 @@ if __name__=="__main__":
 
         keys = pygame.key.get_pressed()
 
-        collisions = [idx for idx,elem in enumerate(elements) if elem.collision_rect.colliderect(adan.collision_rect)]
-        if not collisions:
-            adan.move(keys)
-        else:
-            bounce = False
-            for c in collisions:
-                if type(elements[c]) is Food:
-                    elements.pop(c)
-                else:
-                    bounce = True
-            if bounce:
-                adan.dv = -adan.dv
+        for agent in elements[0:environment["agents"]]:
+            collisions = [idx for idx,elem in enumerate(elements) if elem.collision_rect.colliderect(agent.collision_rect) and elem!=agent]
+            if not collisions:
+                agent.move(keys)
+            else:
+                bounce = False
+                for c in collisions:
+                    if type(elements[c]) is Food:
+                        elements.pop(c)
+                    else:
+                        bounce = True
+                if bounce:
+                    agent.dv = -agent.dv
 
-        adan.update()
+            agent.update()
 
-        for idx,vision in enumerate(adan.vision):
-            for elem in elements:
-                line_collide = elem.collision_rect.clipline(adan.pos,vision)
-                if line_collide:
-                    adan.vision_color[idx]="red"
-                    adan.vision[idx]=np.array(line_collide[0])
-                    adan.collision_distance[idx] = np.sqrt((adan.pos[0]-vision[0])**2+(adan.pos[1]-vision[1])**2)-adan.radius
-                    break
-                else:
-                    adan.vision_color[idx]="black"
-                    adan.collision_distance[idx]=999
-
-        # RENDER YOUR GAME HERE
+            for idx,vision in enumerate(agent.vision):
+                for elem in elements:
+                    if elem!=agent:
+                        line_collide = elem.collision_rect.clipline(agent.pos,vision) 
+                        if line_collide:
+                            agent.vision_color[idx]="red"
+                            agent.vision[idx]=np.array(line_collide[0])
+                            agent.collision_distance[idx] = np.sqrt((agent.pos[0]-vision[0])**2+(agent.pos[1]-vision[1])**2)-agent.radius
+                            break
+                        else:
+                            agent.vision_color[idx]="black"
+                            agent.collision_distance[idx]=999
 
         for elem in elements:
             elem.draw()
-        adan.draw()
-        # flip() the display to put your work on screen
+        
+        # Render on screen
         pygame.display.flip()
 
         clock.tick(60)  # limits FPS to 60
-
 
 
     pygame.quit()

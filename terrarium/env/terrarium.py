@@ -219,5 +219,7 @@ if __name__ == "__main__":
     env = CustomActionMaskedEnvironment()
     env.reset()
     env.render()
-    env.step({"prisoner":1,"guard":2})
-    env.render()
+    while True:
+        input()
+        env.step({"prisoner":random.randint(0,3),"guard":random.randint(0,3)})
+        env.render()

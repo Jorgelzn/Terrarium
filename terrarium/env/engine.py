@@ -73,20 +73,20 @@ class Agent(Entity):
             self.vision[idx][1] = self.pos[1] - self.vision_len*math.sin(self.direction+np.deg2rad((idx-5)*10))
         self.collision_rect = pygame.Rect(self.pos[0]-self.radius,self.pos[1]-self.radius,self.radius*2,self.radius*2)
 
-    def move(self,keys):
-        movements=[pygame.K_w,pygame.K_s,pygame.K_a,pygame.K_d]
-        if True in [keys[k] for k in movements]:
+    def move(self,action):
+        movements=["up","down","right","left"]
+        if action in movements:
             perpendicular=self.direction
             velocity_front = 0
             velocity_side = 0 
-            if keys[pygame.K_w]:
+            if action=="up":
                 velocity_front=self.velocity
-            if keys[pygame.K_s]:
+            if action=="down":
                 velocity_front=-self.velocity
-            if keys[pygame.K_a]:
+            if action=="left":
                 velocity_side=self.velocity
                 perpendicular = self.direction+np.deg2rad(90)
-            if keys[pygame.K_d]:
+            if action=="right":
                 velocity_side=self.velocity
                 perpendicular = self.direction-np.deg2rad(90)
 
@@ -102,10 +102,53 @@ class Agent(Entity):
         elif self.dv[1]<0:
             self.dv[1]+=friction
 
-        if keys[pygame.K_LEFT]:
+        if action=="turn_left":
             self.direction+=0.1
-        if keys[pygame.K_RIGHT]:
+        if action=="turn_right":
             self.direction-=0.1
+
+
+def step(environment,elements,action):
+    # clean screen
+    screen.fill("white")
+
+    for agent in elements[0:environment["agents"]]:
+        collisions = [idx for idx,elem in enumerate(elements) if elem.collision_rect.colliderect(agent.collision_rect) and elem!=agent]
+        if not collisions:
+            agent.move(action)
+        else:
+            bounce = False
+            for c in collisions:
+                if type(elements[c]) is Food:
+                    elements.pop(c)
+                else:
+                    bounce = True
+            if bounce:
+                agent.dv = -agent.dv
+
+        agent.update()
+
+        for idx,vision in enumerate(agent.vision):
+            collided = False
+            for elem in elements:
+                if elem!=agent:
+                    line_collide = elem.collision_rect.clipline(agent.pos,vision) 
+                    if line_collide:
+                        agent.vision_color[idx]="red"
+                        agent.vision[idx]=np.array(line_collide[0])
+                        agent.collision_distance[idx] = np.sqrt((agent.pos[0]-vision[0])**2+(agent.pos[1]-vision[1])**2)-agent.radius
+                        collided=True
+            if not collided:
+                agent.vision_color[idx]="black"
+                agent.collision_distance[idx]=999
+
+    for elem in elements:
+        elem.draw()
+        
+    # Render on screen
+    pygame.display.flip()
+
+    clock.tick(60)  # limits FPS to 60
 
 if __name__=="__main__":
 
@@ -132,58 +175,13 @@ if __name__=="__main__":
                 if not collisions:
                         elements.append(obj)
                         created = True
-
-
+    actions=["up","down","left","right","turn_left","turn_right"]
     while running:
-
-        # clean screen
-        screen.fill("white")
-
         #check if exit button is pressed in window
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
-
-
-        keys = pygame.key.get_pressed()
-
-        for agent in elements[0:environment["agents"]]:
-            collisions = [idx for idx,elem in enumerate(elements) if elem.collision_rect.colliderect(agent.collision_rect) and elem!=agent]
-            if not collisions:
-                agent.move(keys)
-            else:
-                bounce = False
-                for c in collisions:
-                    if type(elements[c]) is Food:
-                        elements.pop(c)
-                    else:
-                        bounce = True
-                if bounce:
-                    agent.dv = -agent.dv
-
-            agent.update()
-
-            for idx,vision in enumerate(agent.vision):
-                collided = False
-                for elem in elements:
-                    if elem!=agent:
-                        line_collide = elem.collision_rect.clipline(agent.pos,vision) 
-                        if line_collide:
-                            agent.vision_color[idx]="red"
-                            agent.vision[idx]=np.array(line_collide[0])
-                            agent.collision_distance[idx] = np.sqrt((agent.pos[0]-vision[0])**2+(agent.pos[1]-vision[1])**2)-agent.radius
-                            collided=True
-                if not collided:
-                    agent.vision_color[idx]="black"
-                    agent.collision_distance[idx]=999
-
-        for elem in elements:
-            elem.draw()
         
-        # Render on screen
-        pygame.display.flip()
-
-        clock.tick(60)  # limits FPS to 60
-
+        step(environment,elements,actions[random.randint(0,5)])
 
     pygame.quit()

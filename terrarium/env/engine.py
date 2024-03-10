@@ -2,13 +2,6 @@
 import pygame
 import numpy as np
 import math
-import random
-
-pygame.init()
-screen = pygame.display.set_mode((1280, 500))
-clock = pygame.time.Clock()
-running = True
-friction = 0.1
 
 
 class Obstacle():
@@ -19,7 +12,7 @@ class Obstacle():
         self.size = size
         self.collision_rect = pygame.Rect(self.pos[0]-self.size[0]/2,self.pos[1]-self.size[1]/2,self.size[0],self.size[1])
 
-    def draw(self):
+    def draw(self,screen):
         pygame.draw.rect(screen,self.color,self.collision_rect,1)
     
 
@@ -31,7 +24,7 @@ class Food():
         self.color = color
         self.collision_rect = pygame.Rect(self.pos[0]-self.radius,self.pos[1]-self.radius,self.radius*2,self.radius*2)
 
-    def draw(self):
+    def draw(self,screen):
         #pygame.draw.rect(screen,"black",self.collision_rect,1)
         pygame.draw.circle(screen, self.color, self.pos, self.radius,0)
 
@@ -56,7 +49,7 @@ class Agent():
             self.collision_distance[idx] = 999
         self.dv = np.zeros(2)
 
-    def draw(self):
+    def draw(self,screen):
         #pygame.draw.rect(screen,"black",self.collision_rect,1)
         for idx,vision in enumerate(self.vision):
             pygame.draw.aaline(screen, self.vision_color[idx], self.pos,vision)
@@ -69,7 +62,7 @@ class Agent():
             self.vision[idx][1] = self.pos[1] - self.vision_len*math.sin(self.direction+np.deg2rad((idx-5)*10))
         self.collision_rect = pygame.Rect(self.pos[0]-self.radius,self.pos[1]-self.radius,self.radius*2,self.radius*2)
 
-    def move(self,action):
+    def move(self,action,friction):
         movements=["up","down","right","left"]
         if action in movements:
             perpendicular=self.direction
@@ -102,82 +95,3 @@ class Agent():
             self.direction+=0.1
         if action=="turn_right":
             self.direction-=0.1
-
-
-def step(environment,elements,action):
-    # clean screen
-    screen.fill("white")
-
-    for agent in elements[0:environment["agents"]]:
-        collisions = [idx for idx,elem in enumerate(elements) if elem.collision_rect.colliderect(agent.collision_rect) and elem!=agent]
-        if not collisions:
-            agent.move(action)
-        else:
-            bounce = False
-            for c in collisions:
-                if type(elements[c]) is Food:
-                    elements.pop(c)
-                else:
-                    bounce = True
-            if bounce:
-                agent.dv = -agent.dv
-
-        agent.update()
-
-        for idx,vision in enumerate(agent.vision):
-            collided = False
-            for elem in elements:
-                if elem!=agent:
-                    line_collide = elem.collision_rect.clipline(agent.pos,vision) 
-                    if line_collide:
-                        agent.vision_color[idx]="red"
-                        agent.vision[idx]=np.array(line_collide[0])
-                        agent.collision_distance[idx] = np.sqrt((agent.pos[0]-vision[0])**2+(agent.pos[1]-vision[1])**2)-agent.radius
-                        collided=True
-            if not collided:
-                agent.vision_color[idx]="black"
-                agent.collision_distance[idx]=999
-
-    for elem in elements:
-        elem.draw()
-        
-    # Render on screen
-    pygame.display.flip()
-
-    clock.tick(60)  # limits FPS to 60
-
-if __name__=="__main__":
-
-    environment = {
-        "agents":2,
-        "obstacles":10,
-        "food":5
-    }
-
-    elements = []
-
-    for obj_def in environment:
-        for obj_num in range(environment[obj_def]):
-            created = False
-            while not created:
-                pos = np.array([random.uniform(0,screen.get_width()), random.uniform(0,screen.get_height())])
-                if obj_def ==  "agents":
-                    obj = Agent(pos,40,4,random.randint(0, 360),200,"black")
-                elif obj_def == "obstacles":
-                    obj = Obstacle(pos, np.array([random.uniform(0,300),random.uniform(0,300)]), "black")
-                elif obj_def == "food":
-                    obj = Food(pos,30,"green")
-                collisions = [elem for elem in elements if elem.collision_rect.colliderect(obj.collision_rect)]
-                if not collisions:
-                        elements.append(obj)
-                        created = True
-    actions=["up","down","left","right","turn_left","turn_right"]
-    while running:
-        #check if exit button is pressed in window
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                running = False
-        
-        step(environment,elements,actions[random.randint(0,5)])
-
-    pygame.quit()

@@ -80,7 +80,7 @@ class Terrarium(ParallelEnv):
             collisions = [idx for idx,elem in enumerate(self.elements) if elem.collision_rect.colliderect(agent.collision_rect) and elem!=agent]
 
             if not collisions:
-                agent.move(agent.actions[actions[idx]])
+                agent.move(agent.actions[actions[idx]],self.friction)
             else:
                 bounce = False
                 for c in collisions:
@@ -184,7 +184,7 @@ class Terrarium(ParallelEnv):
     def render(self):
         """Renders the environment."""
         for idx,elem in enumerate(self.elements):
-            elem.draw()
+            elem.draw(self.screen)
         # Render on screen
         pygame.display.flip()
 

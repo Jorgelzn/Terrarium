@@ -194,7 +194,7 @@ class Terrarium(ParallelEnv):
         return self.acts
     
 
-def otros():
+if __name__ == "__main__":
     settings = {
         "agents":5,
         "obstacles":1,
@@ -208,7 +208,7 @@ def otros():
 
     pygame.quit()
 
-if __name__ == "__main__":
+def otros():
     settings = {
         "agents":2,
         "obstacles":10,

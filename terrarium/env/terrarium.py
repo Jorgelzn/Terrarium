@@ -190,6 +190,11 @@ class Terrarium(ParallelEnv):
 
         self.clock.tick(60)  # limits FPS to 60
 
+        #check if exit button is pressed in window
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                env.running = False
+
     # Observation space should be defined here.
     # lru_cache allows observation and action spaces to be memoized, reducing clock cycles required to get each agent's space.
     # If your spaces change over time, remove this line (disable caching).
@@ -213,10 +218,6 @@ if __name__ == "__main__":
     }
     env = Terrarium(settings)
     while env.running:
-        #check if exit button is pressed in window
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                env.running = False
         env.step([random.randint(0,5) for a in range(settings["agents"])])
         env.render()
 

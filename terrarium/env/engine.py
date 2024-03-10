@@ -11,12 +11,7 @@ running = True
 friction = 0.1
 
 
-class Entity():
-    
-    def draw():
-        pass 
-
-class Obstacle(Entity):
+class Obstacle():
 
     def __init__(self, initial_pos, size, color):
         self.pos = initial_pos
@@ -28,7 +23,7 @@ class Obstacle(Entity):
         pygame.draw.rect(screen,self.color,self.collision_rect,1)
     
 
-class Food(Entity):
+class Food():
 
     def __init__(self, initial_pos, radius, color):
         self.pos = initial_pos
@@ -40,7 +35,7 @@ class Food(Entity):
         #pygame.draw.rect(screen,"black",self.collision_rect,1)
         pygame.draw.circle(screen, self.color, self.pos, self.radius,0)
 
-class Agent(Entity):
+class Agent():
 
     def __init__(self, initial_pos, radius,velocity,direction,vision_len,color):
         self.pos = initial_pos
@@ -53,6 +48,7 @@ class Agent(Entity):
         self.vision = np.zeros((11,2))
         self.vision_color = np.empty((11), dtype=object)
         self.collision_distance = np.zeros((11))
+        self.actions = ["up","down","left","right","turn_left","turn_right"]
         for idx,vision in enumerate(self.vision):
             self.vision[idx][0] = self.pos[0] + self.vision_len*math.cos(self.direction+np.deg2rad((idx-5)*10))
             self.vision[idx][1] = self.pos[1] - self.vision_len*math.sin(self.direction+np.deg2rad((idx-5)*10))

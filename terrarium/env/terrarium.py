@@ -1,9 +1,8 @@
-import functools
 import random
 from copy import copy
 
 import numpy as np
-from gymnasium.spaces import Discrete, MultiDiscrete
+from gymnasium.spaces import Box,Discrete
 
 from pettingzoo import ParallelEnv
 
@@ -19,7 +18,7 @@ class Terrarium(ParallelEnv):
     """
 
     metadata = {
-        "name": "custom_environment_v0",
+        "name": "Terrarium",
     }
 
     def __init__(self,settings):
@@ -38,6 +37,7 @@ class Terrarium(ParallelEnv):
 
         These attributes should not be changed after initialization.
         """
+
         self.escape_y = 0
         self.escape_x = 0
         self.guard_y = 0
@@ -45,14 +45,15 @@ class Terrarium(ParallelEnv):
         self.prisoner_y = 0
         self.prisoner_x = 0
         self.timestep = 0
-        self.possible_agents = ["animal" for a in range(settings["agents"])]
-
-        pygame.init()
+        self.possible_agents = ["animal_"+str(idx) for idx in range(settings["agents"])]
         self.screen = pygame.display.set_mode((1280, 500))
         self.clock = pygame.time.Clock()
         self.running = True
         self.friction = 0.1
         self.settings = settings
+
+        self.acts = Discrete(6)
+        self.obs = Box(low=0, high=999, shape=(11,), dtype=np.float32)
 
         self.elements = []
         for obj_def in self.settings:
@@ -72,6 +73,8 @@ class Terrarium(ParallelEnv):
                             created = True
         self.init_elements = copy(self.elements)
 
+        pygame.init()
+
     def step(self,actions):
         # clean screen
         self.screen.fill("white")
@@ -80,7 +83,7 @@ class Terrarium(ParallelEnv):
             collisions = [idx for idx,elem in enumerate(self.elements) if elem.collision_rect.colliderect(agent.collision_rect) and elem!=agent]
 
             if not collisions:
-                agent.move(agent.actions[actions[idx]],self.friction)
+                agent.move(agent.actions[actions["animal_"+str(idx)]],self.friction)
             else:
                 bounce = False
                 for c in collisions:
@@ -106,42 +109,31 @@ class Terrarium(ParallelEnv):
                 if not collided:
                     agent.vision_color[idx]="black"
                     agent.collision_distance[idx]=999
+                    
         # Check termination conditions
-        terminations = {"animal": False for a in agents}
-        rewards = {"animal": 0 for a in agents}
-        if self.prisoner_x == self.guard_x and self.prisoner_y == self.guard_y:
-            rewards = {"prisoner": -1, "guard": 1}
-            terminations = {"animal": True for a in agents}
-            #self.agents = []
+        terminations = {a: False for a in self.agents}
+        rewards = {a: 0 for a in self.agents}
+        if Food not in [type(elem) for elem in self.elements]:
+            rewards = {a:1 for a in self.agents}
+            terminations = {a: True for a in self.agents}
+            self.agents = []
+            self.running = False
 
-        elif self.prisoner_x == self.escape_x and self.prisoner_y == self.escape_y:
-            rewards = {"prisoner": 1, "guard": -1}
-            terminations = {"animal": True for a in agents}
-            #self.agents = []
 
         # Check truncation conditions (overwrites termination conditions)
-        truncations = {"prisoner": False, "guard": False}
-        if self.timestep > 100:
-            rewards = {"prisoner": 0, "guard": 0}
-            truncations = {"prisoner": True, "guard": True}
-            #self.agents = []
+        truncations = {a: False for a in self.agents}
+        if self.timestep > 100000:
+            rewards = {a:0 for a in self.agents}
+            truncations = {a: True for a in self.agents}
+            self.agents = []
         self.timestep += 1
 
         # Get observations
-        observation = (
-            self.prisoner_x + 7 * self.prisoner_y,
-            self.guard_x + 7 * self.guard_y,
-            self.escape_x + 7 * self.escape_y,
-        )
-        observations = {
-            "prisoner": {
-                "observation": observation
-            },
-            "guard": {"observation": observation},
-        }
+        observations = {"animal_"+str(idx):{"observation":agent.collision_distance} for idx,agent in enumerate(agents)}
+
 
         # Get dummy infos (not used in this example)
-        infos = {"prisoner": {}, "guard": {}}
+        infos = {a:{} for a in self.agents}
 
         return observations, rewards, terminations, truncations, infos
 
@@ -160,20 +152,12 @@ class Terrarium(ParallelEnv):
 
         And must set up the environment so that render(), step(), and observe() can be called without issues.
         """
-        self.agents = copy(self.possible_agents)
+        self.elements = copy(self.init_elements)
+        agents = self.elements[0:self.settings["agents"]]
+        self.agents = ["animal_"+str(idx) for idx in range(len(agents))]
         self.timestep = 0
 
-        self.elements = copy(self.init_elements)
-
-        observation = (
-            self.prisoner_x + 7 * self.prisoner_y,
-            self.guard_x + 7 * self.guard_y,
-            self.escape_x + 7 * self.escape_y,
-        )
-        observations = {
-            "prisoner": {"observation": observation, "action_mask": [0, 1, 1, 0]},
-            "guard": {"observation": observation, "action_mask": [1, 0, 0, 1]},
-        }
+        observations = {"animal_"+str(idx):{"observation":agent.collision_distance} for idx,agent in enumerate(agents)}
 
         # Get dummy infos. Necessary for proper parallel_to_aec conversion
         infos = {a: {} for a in self.agents}
@@ -201,14 +185,28 @@ class Terrarium(ParallelEnv):
     #@functools.lru_cache(maxsize=None)
     def observation_space(self, agent):
         # gymnasium spaces are defined and documented here: https://gymnasium.farama.org/api/spaces/
-        return MultiDiscrete([7 * 7 - 1] * 3)
+        return self.obs
 
     # Action space should be defined here.
     # If your spaces change over time, remove this line (disable caching).
     #@functools.lru_cache(maxsize=None)
     def action_space(self, agent):
-        return Discrete(6)
+        return self.acts
     
+
+def otros():
+    settings = {
+        "agents":5,
+        "obstacles":1,
+        "food":1
+    }
+    env = Terrarium(settings)
+    env.reset()
+    while env.running:
+        env.step({a:random.randint(0,5) for a in env.agents})
+        env.render()
+
+    pygame.quit()
 
 if __name__ == "__main__":
     settings = {
@@ -217,8 +215,4 @@ if __name__ == "__main__":
         "food":5
     }
     env = Terrarium(settings)
-    while env.running:
-        env.step([random.randint(0,5) for a in range(settings["agents"])])
-        env.render()
-
-    pygame.quit()
+    parallel_api_test(env, num_cycles=1_000_000)

@@ -196,14 +196,14 @@ class Terrarium(ParallelEnv):
 
 if __name__ == "__main__":
     settings = {
-        "agents":5,
-        "obstacles":1,
-        "food":1
+        "agents":2,
+        "obstacles":3,
+        "food":5
     }
     env = Terrarium(settings)
     env.reset()
     while env.running:
-        env.step({a:random.randint(0,5) for a in env.agents})
+        env.step({agent: env.action_space(agent).sample() for agent in env.agents})
         env.render()
 
     pygame.quit()

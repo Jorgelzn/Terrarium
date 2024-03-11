@@ -5,5 +5,8 @@ A natural environment generator to test algorithms for intelligent agents
 
 ### Installing depencies
 
-#### Pip
 pip install -r requirements.txt
+
+### User guide
+
+execute terrarium.py inside env folder

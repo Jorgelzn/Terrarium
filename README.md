@@ -9,4 +9,4 @@ pip install -r requirements.txt
 
 ### User guide
 
-execute terrarium.py inside env folder
+execute terrarium.py inside terrarium/env folder

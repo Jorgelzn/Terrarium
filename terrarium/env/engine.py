@@ -2,7 +2,7 @@
 import pygame
 import numpy as np
 import math
-
+from gymnasium.spaces import Box,Discrete
 
 class Obstacle():
 
@@ -30,7 +30,8 @@ class Food():
 
 class Agent():
 
-    def __init__(self, initial_pos, radius,velocity,direction,vision_len,color):
+    def __init__(self, initial_pos, radius,velocity,direction,vision_len,color,agent_id):
+        self.agent_id = agent_id
         self.pos = initial_pos
         self.radius = radius
         self.color = color
@@ -41,7 +42,9 @@ class Agent():
         self.vision = np.zeros((11,2))
         self.vision_color = np.empty((11), dtype=object)
         self.collision_distance = np.zeros((11))
+        self.obs = Box(low=0, high=999, shape=(11,), dtype=np.float32)
         self.actions = ["up","down","left","right","turn_left","turn_right"]
+        self.acts = Discrete(6)
         for idx,vision in enumerate(self.vision):
             self.vision[idx][0] = self.pos[0] + self.vision_len*math.cos(self.direction+np.deg2rad((idx-5)*10))
             self.vision[idx][1] = self.pos[1] - self.vision_len*math.sin(self.direction+np.deg2rad((idx-5)*10))

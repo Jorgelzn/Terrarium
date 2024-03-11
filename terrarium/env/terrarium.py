@@ -2,7 +2,6 @@ import random
 from copy import copy
 
 import numpy as np
-from gymnasium.spaces import Box,Discrete
 
 from pettingzoo import ParallelEnv
 
@@ -38,12 +37,6 @@ class Terrarium(ParallelEnv):
         These attributes should not be changed after initialization.
         """
 
-        self.escape_y = 0
-        self.escape_x = 0
-        self.guard_y = 0
-        self.guard_x = 0
-        self.prisoner_y = 0
-        self.prisoner_x = 0
         self.timestep = 0
         self.possible_agents = ["animal_"+str(idx) for idx in range(settings["agents"])]
         self.screen = pygame.display.set_mode((1280, 500))
@@ -52,9 +45,6 @@ class Terrarium(ParallelEnv):
         self.friction = 0.1
         self.settings = settings
 
-        self.acts = Discrete(6)
-        self.obs = Box(low=0, high=999, shape=(11,), dtype=np.float32)
-
         self.elements = []
         for obj_def in self.settings:
             for obj_num in range(settings[obj_def]):
@@ -62,7 +52,7 @@ class Terrarium(ParallelEnv):
                 while not created:
                     pos = np.array([random.uniform(0,self.screen.get_width()), random.uniform(0,self.screen.get_height())])
                     if obj_def ==  "agents":
-                        obj = Agent(pos,40,4,random.randint(0, 360),200,"black")
+                        obj = Agent(pos,40,4,random.randint(0, 360),200,"black","animal_"+str(obj_num))
                     elif obj_def == "obstacles":
                         obj = Obstacle(pos, np.array([random.uniform(0,300),random.uniform(0,300)]), "black")
                     elif obj_def == "food":
@@ -72,25 +62,25 @@ class Terrarium(ParallelEnv):
                             self.elements.append(obj)
                             created = True
         self.init_elements = copy(self.elements)
-
+        self.agents_obs = self.elements[:self.settings["agents"]]
+        self.elements = self.elements[self.settings["agents"]+1:]
         pygame.init()
 
     def step(self,actions):
         # clean screen
         self.screen.fill("white")
-        agents = self.elements[0:self.settings["agents"]]
-        for idx,agent in enumerate(agents):
-            collisions = [idx for idx,elem in enumerate(self.elements) if elem.collision_rect.colliderect(agent.collision_rect) and elem!=agent]
-
-            if not collisions:
-                agent.move(agent.actions[actions["animal_"+str(idx)]],self.friction)
+        for idx,agent in enumerate(self.agents_obs):
+            collisions = [idx for idx,elem in enumerate(self.elements) if elem.collision_rect.colliderect(agent.collision_rect)]
+            agents_collisions=[idx for idx,a in enumerate(self.agents_obs) if a.collision_rect.colliderect(agent.collision_rect) and a!=agent]
+            if not collisions and not agents_collisions:
+                agent.move(agent.actions[actions[agent.agent_id]],self.friction)
             else:
-                bounce = False
+                bounce = True
                 for c in collisions:
                     if type(self.elements[c]) is Food:
                         self.elements.pop(c)
-                    else:
-                        bounce = True
+                        bounce = False
+                        break
                 if bounce:
                     agent.dv = -agent.dv
 
@@ -98,14 +88,19 @@ class Terrarium(ParallelEnv):
 
             for idx,vision in enumerate(agent.vision):
                 collided = False
-                for elem in self.elements:
-                    if elem!=agent:
-                        line_collide = elem.collision_rect.clipline(agent.pos,vision) 
-                        if line_collide:
-                            agent.vision_color[idx]="red"
-                            agent.vision[idx]=np.array(line_collide[0])
-                            agent.collision_distance[idx] = np.sqrt((agent.pos[0]-vision[0])**2+(agent.pos[1]-vision[1])**2)-agent.radius
-                            collided=True
+                for a in self.agents_obs:
+                    if a!=agent:
+                        for elem in self.elements:
+                            line_collide_agent = a.collision_rect.clipline(agent.pos,vision)
+                            line_collide = elem.collision_rect.clipline(agent.pos,vision) 
+                            if line_collide or line_collide_agent:
+                                if line_collide:
+                                    agent.vision[idx]=np.array(line_collide[0])
+                                elif line_collide_agent:
+                                    agent.vision[idx]=np.array(line_collide_agent[0])
+                                agent.vision_color[idx]="red"
+                                agent.collision_distance[idx] = np.sqrt((agent.pos[0]-vision[0])**2+(agent.pos[1]-vision[1])**2)-agent.radius
+                                collided=True
                 if not collided:
                     agent.vision_color[idx]="black"
                     agent.collision_distance[idx]=999
@@ -117,6 +112,7 @@ class Terrarium(ParallelEnv):
             rewards = {a:1 for a in self.agents}
             terminations = {a: True for a in self.agents}
             self.agents = []
+            self.agents_obs = []
             self.running = False
 
 
@@ -126,10 +122,11 @@ class Terrarium(ParallelEnv):
             rewards = {a:0 for a in self.agents}
             truncations = {a: True for a in self.agents}
             self.agents = []
+            self.agents_obs = []
         self.timestep += 1
 
         # Get observations
-        observations = {"animal_"+str(idx):{"observation":agent.collision_distance} for idx,agent in enumerate(agents)}
+        observations = {a.agent_id:{"observation":agent.collision_distance} for a in self.agents_obs}
 
 
         # Get dummy infos (not used in this example)
@@ -153,11 +150,12 @@ class Terrarium(ParallelEnv):
         And must set up the environment so that render(), step(), and observe() can be called without issues.
         """
         self.elements = copy(self.init_elements)
-        agents = self.elements[0:self.settings["agents"]]
-        self.agents = ["animal_"+str(idx) for idx in range(len(agents))]
+        self.agents_obs = self.elements[:self.settings["agents"]]
+        self.elements = self.elements[self.settings["agents"]+1:]
+        self.agents = [a.agent_id for a in self.agents_obs]
         self.timestep = 0
 
-        observations = {"animal_"+str(idx):{"observation":agent.collision_distance} for idx,agent in enumerate(agents)}
+        observations = {agent.agent_id:{"observation":agent.collision_distance} for agent in self.agents_obs}
 
         # Get dummy infos. Necessary for proper parallel_to_aec conversion
         infos = {a: {} for a in self.agents}
@@ -167,8 +165,10 @@ class Terrarium(ParallelEnv):
 
     def render(self):
         """Renders the environment."""
-        for idx,elem in enumerate(self.elements):
+        for elem in self.elements:
             elem.draw(self.screen)
+        for agent in self.agents_obs:
+            agent.draw(self.screen)
         # Render on screen
         pygame.display.flip()
 
@@ -185,18 +185,18 @@ class Terrarium(ParallelEnv):
     #@functools.lru_cache(maxsize=None)
     def observation_space(self, agent):
         # gymnasium spaces are defined and documented here: https://gymnasium.farama.org/api/spaces/
-        return self.obs
+        return self.agents_obs[self.agents.index(agent)].obs
 
     # Action space should be defined here.
     # If your spaces change over time, remove this line (disable caching).
     #@functools.lru_cache(maxsize=None)
     def action_space(self, agent):
-        return self.acts
+        return self.agents_obs[self.agents.index(agent)].acts
     
 
 if __name__ == "__main__":
     settings = {
-        "agents":2,
+        "agents":5,
         "obstacles":3,
         "food":5
     }
@@ -208,10 +208,10 @@ if __name__ == "__main__":
 
     pygame.quit()
 
-def otros():
+def otro():
     settings = {
-        "agents":2,
-        "obstacles":10,
+        "agents":3,
+        "obstacles":1,
         "food":5
     }
     env = Terrarium(settings)

@@ -9,7 +9,7 @@ pip install -r requirements.txt
 
 ### User guide
 
-execute train.py
+execute play.py
 
 Elements of the simulation can be modified using the settings dictionary,
 which is passed to the environment when it is created.

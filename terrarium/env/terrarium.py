@@ -8,9 +8,9 @@ from pettingzoo import ParallelEnv
 from pettingzoo.test import parallel_api_test
 
 import pygame
-from engine import Food,Agent,Obstacle
+from .engine import Food,Agent,Obstacle
 
-class Terrarium(ParallelEnv):
+class env(ParallelEnv):
     """The metadata holds environment constants.
 
     The "name" metadata allows the environment to be pretty printed.
@@ -177,7 +177,8 @@ class Terrarium(ParallelEnv):
         #check if exit button is pressed in window
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                env.running = False
+                self.running = False
+                pygame.quit()
 
     # Observation space should be defined here.
     # lru_cache allows observation and action spaces to be memoized, reducing clock cycles required to get each agent's space.
@@ -194,25 +195,3 @@ class Terrarium(ParallelEnv):
         return self.agents_obs[self.agents.index(agent)].acts
     
 
-if __name__ == "__main__":
-    settings = {
-        "agents":5,
-        "obstacles":3,
-        "food":5
-    }
-    env = Terrarium(settings)
-    env.reset()
-    while env.running:
-        env.step({agent: env.action_space(agent).sample() for agent in env.agents})
-        env.render()
-
-    pygame.quit()
-
-def otro():
-    settings = {
-        "agents":3,
-        "obstacles":1,
-        "food":5
-    }
-    env = Terrarium(settings)
-    parallel_api_test(env, num_cycles=1_000_000)

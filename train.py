@@ -12,23 +12,18 @@ from torch import nn
 
 import terrarium.terrarium_v0 as Terrarium
 
-class CNNModelV2(TorchModelV2, nn.Module):
+class LinearModel(TorchModelV2, nn.Module):
     def __init__(self, obs_space, act_space, num_outputs, *args, **kwargs):
         TorchModelV2.__init__(self, obs_space, act_space, num_outputs, *args, **kwargs)
         nn.Module.__init__(self)
         self.model = nn.Sequential(
-            nn.Conv2d(3, 32, [8, 8], stride=(4, 4)),
+            (nn.Linear(1024, 512)),
             nn.ReLU(),
-            nn.Conv2d(32, 64, [4, 4], stride=(2, 2)),
-            nn.ReLU(),
-            nn.Conv2d(64, 64, [3, 3], stride=(1, 1)),
-            nn.ReLU(),
-            nn.Flatten(),
-            (nn.Linear(3136, 512)),
+            (nn.Linear(512, 256)),
             nn.ReLU(),
         )
-        self.policy_fn = nn.Linear(512, num_outputs)
-        self.value_fn = nn.Linear(512, 1)
+        self.policy_fn = nn.Linear(256, num_outputs)
+        self.value_fn = nn.Linear(256, 1)
 
     def forward(self, input_dict, state, seq_lens):
         model_out = self.model(input_dict["obs"].permute(0, 3, 1, 2))
@@ -42,26 +37,24 @@ class CNNModelV2(TorchModelV2, nn.Module):
 def env_creator(settings):
 
     env = Terrarium.env(settings)
-    env = ss.color_reduction_v0(env, mode="B")
     env = ss.dtype_v0(env, "float32")
-    env = ss.resize_v1(env, x_size=84, y_size=84)
     env = ss.normalize_obs_v0(env, env_min=0, env_max=1)
-    env = ss.frame_stack_v1(env, 3)
     return env
 
 
 if __name__ == "__main__":
-    ray.init()
-
-    env_name = "terrarium"
-    
     settings = {
         "agents":5,
         "obstacles":3,
         "food":5
     }
+    env_creator(settings)
+    ray.init()
+
+    env_name = "terrarium"
+    
     register_env(env_name, lambda config: ParallelPettingZooEnv(env_creator(settings)))
-    ModelCatalog.register_custom_model("CNNModelV2", CNNModelV2)
+    ModelCatalog.register_custom_model("LinearModel", LinearModel)
 
     config = (
         PPOConfig()

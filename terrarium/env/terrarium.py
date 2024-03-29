@@ -5,37 +5,16 @@ import numpy as np
 
 from pettingzoo import ParallelEnv
 
-from pettingzoo.test import parallel_api_test
-
 import pygame
 from .engine import Food,Agent,Obstacle
 
 class env(ParallelEnv):
-    """The metadata holds environment constants.
-
-    The "name" metadata allows the environment to be pretty printed.
-    """
 
     metadata = {
-        "name": "Terrarium",
+        "name": "terrarium"
     }
 
     def __init__(self,settings):
-        """The init method takes in environment arguments.
-
-        Should define the following attributes:
-        - escape x and y coordinates
-        - guard x and y coordinates
-        - prisoner x and y coordinates
-        - timestamp
-        - possible_agents
-
-        Note: as of v1.18.1, the action_spaces and observation_spaces attributes are deprecated.
-        Spaces should be defined in the action_space() and observation_space() methods.
-        If these methods are not overridden, spaces will be inferred from self.observation_spaces/action_spaces, raising a warning.
-
-        These attributes should not be changed after initialization.
-        """
 
         self.timestep = 0
         self.possible_agents = ["animal_"+str(idx) for idx in range(settings["agents"])]
@@ -65,6 +44,49 @@ class env(ParallelEnv):
         self.agents_obs = self.elements[:self.settings["agents"]]
         self.elements = self.elements[self.settings["agents"]+1:]
         pygame.init()
+
+
+    def reset(self, seed=None, options=None):
+
+        self.elements = copy(self.init_elements)
+        self.agents_obs = self.elements[:self.settings["agents"]]
+        self.elements = self.elements[self.settings["agents"]+1:]
+        self.agents = [a.agent_id for a in self.agents_obs]
+        self.timestep = 0
+
+        observations = {agent.agent_id:{"observation":agent.collision_distance} for agent in self.agents_obs}
+
+        # Get dummy infos. Necessary for proper parallel_to_aec conversion
+        infos = {a: {} for a in self.agents}
+
+        return observations, infos
+
+
+    def render(self):
+        """Renders the environment."""
+        for elem in self.elements:
+            elem.draw(self.screen)
+        for agent in self.agents_obs:
+            agent.draw(self.screen)
+        # Render on screen
+        pygame.display.flip()
+
+        self.clock.tick(60)  # limits FPS to 60
+
+        #check if exit button is pressed in window
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                self.running = False
+                pygame.quit()
+
+
+    def observation_space(self, agent):
+        return self.agents_obs[self.possible_agents.index(agent)].obs
+
+
+    def action_space(self, agent):
+        return self.agents_obs[self.possible_agents.index(agent)].acts
+
 
     def step(self,actions):
         # clean screen
@@ -134,64 +156,4 @@ class env(ParallelEnv):
 
         return observations, rewards, terminations, truncations, infos
 
-
-    def reset(self, seed=None, options=None):
-        """Reset set the environment to a starting point.
-
-        It needs to initialize the following attributes:
-        - agents
-        - timestamp
-        - prisoner x and y coordinates
-        - guard x and y coordinates
-        - escape x and y coordinates
-        - observation
-        - infos
-
-        And must set up the environment so that render(), step(), and observe() can be called without issues.
-        """
-        self.elements = copy(self.init_elements)
-        self.agents_obs = self.elements[:self.settings["agents"]]
-        self.elements = self.elements[self.settings["agents"]+1:]
-        self.agents = [a.agent_id for a in self.agents_obs]
-        self.timestep = 0
-
-        observations = {agent.agent_id:{"observation":agent.collision_distance} for agent in self.agents_obs}
-
-        # Get dummy infos. Necessary for proper parallel_to_aec conversion
-        infos = {a: {} for a in self.agents}
-
-        return observations, infos
-
-
-    def render(self):
-        """Renders the environment."""
-        for elem in self.elements:
-            elem.draw(self.screen)
-        for agent in self.agents_obs:
-            agent.draw(self.screen)
-        # Render on screen
-        pygame.display.flip()
-
-        self.clock.tick(60)  # limits FPS to 60
-
-        #check if exit button is pressed in window
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                self.running = False
-                pygame.quit()
-
-    # Observation space should be defined here.
-    # lru_cache allows observation and action spaces to be memoized, reducing clock cycles required to get each agent's space.
-    # If your spaces change over time, remove this line (disable caching).
-    #@functools.lru_cache(maxsize=None)
-    def observation_space(self, agent):
-        # gymnasium spaces are defined and documented here: https://gymnasium.farama.org/api/spaces/
-        return self.agents_obs[self.agents.index(agent)].obs
-
-    # Action space should be defined here.
-    # If your spaces change over time, remove this line (disable caching).
-    #@functools.lru_cache(maxsize=None)
-    def action_space(self, agent):
-        return self.agents_obs[self.agents.index(agent)].acts
-    
 

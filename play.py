@@ -20,4 +20,5 @@ def test():
         "food":5
     }
     env = Terrarium(settings)
+    
     parallel_api_test(env, num_cycles=1_000_000)

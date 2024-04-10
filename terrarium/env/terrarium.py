@@ -7,6 +7,7 @@ from pettingzoo import ParallelEnv
 
 import pygame
 from .engine import Food,Agent,Obstacle
+from gymnasium.spaces import Discrete
 
 class env(ParallelEnv):
 
@@ -52,9 +53,11 @@ class env(ParallelEnv):
         self.agents_obs = self.elements[:self.settings["agents"]]
         self.elements = self.elements[self.settings["agents"]+1:]
         self.agents = [a.agent_id for a in self.agents_obs]
+        self.observation_spaces = {agent.agent_id:agent.obs for agent in self.agents_obs}
+        self.action_spaces = {agent.agent_id:Discrete(6) for agent in self.agents_obs}
         self.timestep = 0
 
-        observations = {agent.agent_id:{"observation":agent.collision_distance} for agent in self.agents_obs}
+        observations = {agent.agent_id:agent.collision_distance for agent in self.agents_obs}
 
         # Get dummy infos. Necessary for proper parallel_to_aec conversion
         infos = {a: {} for a in self.agents}
@@ -148,7 +151,7 @@ class env(ParallelEnv):
         self.timestep += 1
 
         # Get observations
-        observations = {a.agent_id:{"observation":agent.collision_distance} for a in self.agents_obs}
+        observations = {a.agent_id:agent.collision_distance for a in self.agents_obs}
 
 
         # Get dummy infos (not used in this example)

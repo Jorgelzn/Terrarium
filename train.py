@@ -38,7 +38,6 @@ def env_creator(settings):
 
     env = Terrarium.env(settings)
     env = ss.dtype_v0(env, "float32")
-    env = ss.normalize_obs_v0(env, env_min=0, env_max=1)
     return env
 
 
@@ -49,11 +48,12 @@ if __name__ == "__main__":
         "food":5
     }
     env_creator(settings)
+
     ray.init()
 
     env_name = "terrarium"
     
-    register_env(env_name, lambda config: ParallelPettingZooEnv(env_creator(settings)))
+    register_env(env_name, lambda config: ParallelPettingZooEnv(Terrarium.env(settings)))
     ModelCatalog.register_custom_model("LinearModel", LinearModel)
 
     config = (

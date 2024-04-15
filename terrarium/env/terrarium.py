@@ -24,6 +24,7 @@ class env(ParallelEnv):
         self.settings = settings
         self.render_mode = render_mode
         self.screen_dim = (1280, 500)
+        self.screen = pygame.Surface(self.screen_dim)
         self.elements = []
         for obj_def in self.settings:
             for obj_num in range(settings[obj_def]):
@@ -44,11 +45,6 @@ class env(ParallelEnv):
         self.agents_obs = self.elements[:self.settings["agents"]]
         self.elements = self.elements[self.settings["agents"]+1:]
 
-        if self.render_mode:
-            self.screen = pygame.display.set_mode(self.screen_dim)
-            self.clock = pygame.time.Clock()
-            pygame.init()
-
 
     def reset(self, seed=None, options=None):
 
@@ -68,26 +64,19 @@ class env(ParallelEnv):
         return observations, infos
 
 
-    def render(self):
-        if self.render_mode:
-            # clean screen
-            self.screen.fill("white")
-            """Renders the environment."""
-            for elem in self.elements:
-                elem.draw(self.screen)
-            for agent in self.agents_obs:
-                agent.draw(self.screen)
-            # Render on screen
-            pygame.display.flip()
+    def render(self,render_mode="rgb"):
 
-            self.clock.tick(60)  # limits FPS to 60
+        # clean screen
+        self.screen.fill("white")
+        """Renders the environment."""
+        for elem in self.elements:
+            elem.draw(self.screen)
+        for agent in self.agents_obs:
+            agent.draw(self.screen)
 
-            #check if exit button is pressed in window
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    self.running = False
-                    pygame.quit()
+        pixel_array = pygame.surfarray.array3d(self.screen)
 
+        return pixel_array
 
     def observation_space(self, agent):
         return self.agents_obs[self.possible_agents.index(agent)].obs
@@ -98,6 +87,7 @@ class env(ParallelEnv):
 
 
     def step(self,actions):
+        rewards = {a: 0 for a in self.agents}
         for idx,agent in enumerate(self.agents_obs):
             collisions = [idx for idx,elem in enumerate(self.elements) if elem.collision_rect.colliderect(agent.collision_rect)]
             agents_collisions=[idx for idx,a in enumerate(self.agents_obs) if a.collision_rect.colliderect(agent.collision_rect) and a!=agent]
@@ -108,6 +98,7 @@ class env(ParallelEnv):
                 for c in collisions:
                     if type(self.elements[c]) is Food:
                         self.elements.pop(c)
+                        rewards[agent.agent_id]+=1
                         bounce = False
                         break
                 if bounce:
@@ -136,7 +127,6 @@ class env(ParallelEnv):
                     
         # Check termination conditions
         terminations = {a: False for a in self.agents}
-        rewards = {a: 0 for a in self.agents}
         if Food not in [type(elem) for elem in self.elements]:
             rewards = {a:1 for a in self.agents}
             terminations = {a: True for a in self.agents}

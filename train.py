@@ -53,12 +53,16 @@ if __name__ == "__main__":
 
     env_name = "terrarium"
     
-    register_env(env_name, lambda config: ParallelPettingZooEnv(Terrarium.env(settings,False)))
+    register_env(env_name, lambda config: ParallelPettingZooEnv(Terrarium.env(settings,True)))
     ModelCatalog.register_custom_model("LinearModel", LinearModel)
 
     config = (
         PPOConfig()
-        .environment(env=env_name, clip_actions=True)
+        .evaluation(evaluation_num_episodes=1,evaluation_num_workers=1,evaluation_interval=1,evaluation_config={
+            "record_env": "videos",
+            "render_env": True
+        })
+        .environment(env=env_name, clip_actions=True,render_env=True)
         .rollouts(num_rollout_workers=4, rollout_fragment_length=128)
         .training(
             train_batch_size=512,
@@ -81,8 +85,10 @@ if __name__ == "__main__":
     tune.run(
         "PPO",
         name="PPO",
-        stop={"timesteps_total": 10 if not os.environ.get("CI") else 50000},
+        stop={"timesteps_total": 100 if not os.environ.get("CI") else 50000},
         checkpoint_freq=10,
         local_dir="./ray_results/" + env_name,
         config=config.to_dict(),
+        log_to_file=True,
+        verbose=1
     )

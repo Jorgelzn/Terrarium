@@ -15,7 +15,7 @@ class env(ParallelEnv):
         "name": "terrarium"
     }
 
-    def __init__(self,settings):
+    def __init__(self,settings,render_mode="display"):
 
         self.timestep = 0
         self.possible_agents = ["animal_"+str(idx) for idx in range(settings["agents"])]
@@ -24,7 +24,7 @@ class env(ParallelEnv):
         self.running = True
         self.friction = 0.1
         self.settings = settings
-
+        self.render_mode = render_mode
         self.elements = []
         for obj_def in self.settings:
             for obj_num in range(settings[obj_def]):
@@ -44,7 +44,9 @@ class env(ParallelEnv):
         self.init_elements = copy(self.elements)
         self.agents_obs = self.elements[:self.settings["agents"]]
         self.elements = self.elements[self.settings["agents"]+1:]
-        pygame.init()
+
+        if render_mode == "display":
+            pygame.init()
 
 
     def reset(self, seed=None, options=None):

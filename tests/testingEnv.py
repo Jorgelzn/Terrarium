@@ -176,6 +176,8 @@ if __name__=="__main__":
                 if not collided:
                     agent.vision_color[idx]="black"
                     agent.collision_distance[idx]=999
+            
+            print(agent.collision_distance)
 
         for elem in elements:
             elem.draw()

@@ -15,22 +15,21 @@ class env(ParallelEnv):
         "name": "terrarium"
     }
 
-    def __init__(self,settings,render_mode="display"):
+    def __init__(self,settings,render_mode):
 
         self.timestep = 0
         self.possible_agents = ["animal_"+str(idx) for idx in range(settings["agents"])]
-        self.screen = pygame.display.set_mode((1280, 500))
-        self.clock = pygame.time.Clock()
         self.running = True
         self.friction = 0.1
         self.settings = settings
         self.render_mode = render_mode
+        self.screen_dim = (1280, 500)
         self.elements = []
         for obj_def in self.settings:
             for obj_num in range(settings[obj_def]):
                 created = False
                 while not created:
-                    pos = np.array([random.uniform(0,self.screen.get_width()), random.uniform(0,self.screen.get_height())])
+                    pos = np.array([random.uniform(0,self.screen_dim[0]), random.uniform(0,self.screen_dim[1])])
                     if obj_def ==  "agents":
                         obj = Agent(pos,40,4,random.randint(0, 360),200,"black","animal_"+str(obj_num))
                     elif obj_def == "obstacles":
@@ -45,7 +44,9 @@ class env(ParallelEnv):
         self.agents_obs = self.elements[:self.settings["agents"]]
         self.elements = self.elements[self.settings["agents"]+1:]
 
-        if render_mode == "display":
+        if self.render_mode:
+            self.screen = pygame.display.set_mode(self.screen_dim)
+            self.clock = pygame.time.Clock()
             pygame.init()
 
 
@@ -68,21 +69,24 @@ class env(ParallelEnv):
 
 
     def render(self):
-        """Renders the environment."""
-        for elem in self.elements:
-            elem.draw(self.screen)
-        for agent in self.agents_obs:
-            agent.draw(self.screen)
-        # Render on screen
-        pygame.display.flip()
+        if self.render_mode:
+            # clean screen
+            self.screen.fill("white")
+            """Renders the environment."""
+            for elem in self.elements:
+                elem.draw(self.screen)
+            for agent in self.agents_obs:
+                agent.draw(self.screen)
+            # Render on screen
+            pygame.display.flip()
 
-        self.clock.tick(60)  # limits FPS to 60
+            self.clock.tick(60)  # limits FPS to 60
 
-        #check if exit button is pressed in window
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                self.running = False
-                pygame.quit()
+            #check if exit button is pressed in window
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    self.running = False
+                    pygame.quit()
 
 
     def observation_space(self, agent):
@@ -94,8 +98,6 @@ class env(ParallelEnv):
 
 
     def step(self,actions):
-        # clean screen
-        self.screen.fill("white")
         for idx,agent in enumerate(self.agents_obs):
             collisions = [idx for idx,elem in enumerate(self.elements) if elem.collision_rect.colliderect(agent.collision_rect)]
             agents_collisions=[idx for idx,a in enumerate(self.agents_obs) if a.collision_rect.colliderect(agent.collision_rect) and a!=agent]

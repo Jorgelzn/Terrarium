@@ -34,9 +34,9 @@ class LinearModel(TorchModelV2, nn.Module):
         return self._value_out.flatten()
     
 
-def env_creator(settings):
+def env_creator(settings,render_mode):
 
-    env = Terrarium.env(settings)
+    env = Terrarium.env(settings,render_mode)
     env = ss.dtype_v0(env, "float32")
     return env
 
@@ -47,13 +47,13 @@ if __name__ == "__main__":
         "obstacles":3,
         "food":5
     }
-    env_creator(settings)
+    #env_creator(settings,False)
 
     ray.init()
 
     env_name = "terrarium"
     
-    register_env(env_name, lambda config: ParallelPettingZooEnv(Terrarium.env(settings)))
+    register_env(env_name, lambda config: ParallelPettingZooEnv(Terrarium.env(settings,False)))
     ModelCatalog.register_custom_model("LinearModel", LinearModel)
 
     config = (
@@ -83,6 +83,6 @@ if __name__ == "__main__":
         name="PPO",
         stop={"timesteps_total": 10 if not os.environ.get("CI") else 50000},
         checkpoint_freq=10,
-        local_dir="~/ray_results/" + env_name,
+        local_dir="./ray_results/" + env_name,
         config=config.to_dict(),
     )

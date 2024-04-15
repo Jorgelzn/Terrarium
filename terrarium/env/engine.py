@@ -42,7 +42,7 @@ class Agent():
         self.vision = np.zeros((11,2))
         self.vision_color = np.empty((11), dtype=object)
         self.collision_distance = np.zeros((11),dtype=np.float32)
-        self.obs = Box(low=0, high=999, shape=(11,), dtype=np.float32)
+        self.obs = Box(low=-10, high=999, shape=(11,), dtype=np.float32)
         self.actions = ["up","down","left","right","turn_left","turn_right"]
         self.acts = Discrete(6)
         for idx,vision in enumerate(self.vision):

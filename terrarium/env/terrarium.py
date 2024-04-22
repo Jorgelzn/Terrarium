@@ -24,7 +24,7 @@ class env(ParallelEnv):
         self.settings = settings
         self.render_mode = render_mode
         self.screen_dim = (1280, 500)
-        self.screen = pygame.Surface(self.screen_dim)
+        
         self.elements = []
         for obj_def in self.settings:
             for obj_num in range(settings[obj_def]):
@@ -64,8 +64,8 @@ class env(ParallelEnv):
         return observations, infos
 
 
-    def render(self,render_mode="rgb"):
-
+    def render(self):
+        self.screen = pygame.Surface(self.screen_dim)
         # clean screen
         self.screen.fill("white")
         """Renders the environment."""
@@ -75,6 +75,7 @@ class env(ParallelEnv):
             agent.draw(self.screen)
 
         pixel_array = pygame.surfarray.array3d(self.screen)
+        pixel_array = np.transpose(pixel_array,(1,0,2))
 
         return pixel_array
 

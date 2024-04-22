@@ -6,7 +6,7 @@ if __name__ == "__main__":
         "obstacles":3,
         "food":5
     }
-    env = Terrarium.env(settings)
+    env = Terrarium.env(settings,"human")
     env.reset()
     while env.running:
         env.step({agent: env.action_space(agent).sample() for agent in env.agents})

@@ -1,45 +1,12 @@
-import os
 
 import ray
-import supersuit as ss
 from ray import tune
 from ray.rllib.algorithms.ppo import PPOConfig
 from ray.rllib.env.wrappers.pettingzoo_env import ParallelPettingZooEnv
-from ray.rllib.models import ModelCatalog
-from ray.rllib.models.torch.torch_modelv2 import TorchModelV2
 from ray.tune.registry import register_env
-from torch import nn
-
+from ray import air, tune
 import terrarium.terrarium_v0 as Terrarium
-
-class LinearModel(TorchModelV2, nn.Module):
-    def __init__(self, obs_space, act_space, num_outputs, *args, **kwargs):
-        TorchModelV2.__init__(self, obs_space, act_space, num_outputs, *args, **kwargs)
-        nn.Module.__init__(self)
-        self.model = nn.Sequential(
-            (nn.Linear(1024, 512)),
-            nn.ReLU(),
-            (nn.Linear(512, 256)),
-            nn.ReLU(),
-        )
-        self.policy_fn = nn.Linear(256, num_outputs)
-        self.value_fn = nn.Linear(256, 1)
-
-    def forward(self, input_dict, state, seq_lens):
-        model_out = self.model(input_dict["obs"].permute(0, 3, 1, 2))
-        self._value_out = self.value_fn(model_out)
-        return self.policy_fn(model_out), state
-
-    def value_function(self):
-        return self._value_out.flatten()
-    
-
-def env_creator(settings,render_mode):
-
-    env = Terrarium.env(settings,render_mode)
-    env = ss.dtype_v0(env, "float32")
-    return env
-
+from gymnasium.wrappers import RecordVideo
 
 if __name__ == "__main__":
     settings = {
@@ -48,47 +15,47 @@ if __name__ == "__main__":
         "food":5
     }
     #env_creator(settings,False)
-
-    ray.init()
-
+    ray.init(num_cpus=4)
+    trigger = lambda t: t % 10 == 0
     env_name = "terrarium"
-    
-    register_env(env_name, lambda config: ParallelPettingZooEnv(Terrarium.env(settings,True)))
-    ModelCatalog.register_custom_model("LinearModel", LinearModel)
+    register_env(env_name, lambda config: ParallelPettingZooEnv(RecordVideo(Terrarium.env(settings,"rgb_array"), video_folder="./save_videos", episode_trigger=trigger, disable_logger=True)))
 
+    # Example config switching on rendering.
     config = (
         PPOConfig()
-        .evaluation(evaluation_num_episodes=1,evaluation_num_workers=1,evaluation_interval=1,evaluation_config={
-            "record_env": "videos",
-            "render_env": True
-        })
-        .environment(env=env_name, clip_actions=True,render_env=True)
-        .rollouts(num_rollout_workers=4, rollout_fragment_length=128)
-        .training(
-            train_batch_size=512,
-            lr=2e-5,
-            gamma=0.99,
-            lambda_=0.9,
-            use_gae=True,
-            clip_param=0.4,
-            grad_clip=None,
-            entropy_coeff=0.1,
-            vf_loss_coeff=0.25,
-            sgd_minibatch_size=64,
-            num_sgd_iter=10,
+        # Also try common gym envs like: "CartPole-v1" or "Pendulum-v1".
+        .environment(env=env_name,
+            env_config={"corridor_length": 10, "max_steps": 100},
         )
-        .debugging(log_level="ERROR")
-        .framework(framework="torch")
-        .resources(num_gpus=int(os.environ.get("RLLIB_NUM_GPUS", "0")))
+        .rollouts(num_envs_per_worker=2, num_rollout_workers=1)
+        .evaluation(
+            # Evaluate once per training iteration.
+            evaluation_interval=1,
+            # Run evaluation on (at least) two episodes
+            evaluation_duration=2,
+            # ... using one evaluation worker (setting this to 0 will cause
+            # evaluation to run on the local evaluation worker, blocking
+            # training until evaluation is done).
+            evaluation_num_workers=1,
+            # Special evaluation config. Keys specified here will override
+            # the same keys in the main config, but only for evaluation.
+            evaluation_config=PPOConfig.overrides(
+                # Render the env while evaluating.
+                # Note that this will always only render the 1st RolloutWorker's
+                # env and only the 1st sub-env in a vectorized env.
+                render_env=True,
+            ),
+        )
     )
 
-    tune.run(
+    stop = {
+        "training_iteration": 100,
+        "timesteps_total": 100,
+        "episode_reward_mean": 5,
+    }
+
+    tune.Tuner(
         "PPO",
-        name="PPO",
-        stop={"timesteps_total": 100 if not os.environ.get("CI") else 50000},
-        checkpoint_freq=10,
-        local_dir="./ray_results/" + env_name,
-        config=config.to_dict(),
-        log_to_file=True,
-        verbose=1
-    )
+        param_space=config.to_dict(),
+        run_config=air.RunConfig(stop=stop),
+    ).fit()

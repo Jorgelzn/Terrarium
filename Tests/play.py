@@ -19,6 +19,6 @@ def test():
         "obstacles":1,
         "food":5
     }
-    env = Terrarium(settings)
+    env = Terrarium.env(settings,"human")
     
     parallel_api_test(env, num_cycles=1_000_000)

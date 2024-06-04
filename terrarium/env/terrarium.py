@@ -1,46 +1,70 @@
 import functools
-import random
-from copy import copy
 
-import numpy as np
-from gymnasium.spaces import Discrete, MultiDiscrete
-from gymnasium.utils import EzPickle
+import gymnasium
+from gymnasium.spaces import Discrete
 
 from pettingzoo import ParallelEnv
+from pettingzoo.utils import parallel_to_aec, wrappers
 
-__all__ = ["env", "parallel_env", "raw_env"]
+ROCK = 0
+PAPER = 1
+SCISSORS = 2
+NONE = 3
+MOVES = ["ROCK", "PAPER", "SCISSORS", "None"]
+NUM_ITERS = 100
+REWARD_MAP = {
+    (ROCK, ROCK): (0, 0),
+    (ROCK, PAPER): (-1, 1),
+    (ROCK, SCISSORS): (1, -1),
+    (PAPER, ROCK): (1, -1),
+    (PAPER, PAPER): (0, 0),
+    (PAPER, SCISSORS): (-1, 1),
+    (SCISSORS, ROCK): (-1, 1),
+    (SCISSORS, PAPER): (1, -1),
+    (SCISSORS, SCISSORS): (0, 0),
+}
 
-def env(**kwargs):
-    env = raw_env(**kwargs)
-    #env = wrappers.AssertOutOfBoundsWrapper(env)
-    #env = wrappers.OrderEnforcingWrapper(env)
+
+def env(render_mode=None):
+    """
+    The env function often wraps the environment in wrappers by default.
+    You can find full documentation for these methods
+    elsewhere in the developer documentation.
+    """
+    internal_render_mode = render_mode if render_mode != "ansi" else "human"
+    env = raw_env(render_mode=internal_render_mode)
+    # This wrapper is only for environments which print results to the terminal
+    if render_mode == "ansi":
+        env = wrappers.CaptureStdoutWrapper(env)
+    # this wrapper helps error handling for discrete action spaces
+    env = wrappers.AssertOutOfBoundsWrapper(env)
+    # Provides a wide vareity of helpful user errors
+    # Strongly recommended
+    env = wrappers.OrderEnforcingWrapper(env)
     return env
 
-parallel_env = env
 
-class raw_env(ParallelEnv, EzPickle):
-    """The metadata holds environment constants.
-
-    The "name" metadata allows the environment to be pretty printed.
+def raw_env(render_mode=None):
     """
+    To support the AEC API, the raw_env() function just uses the from_parallel
+    function to convert from a ParallelEnv to an AEC env
+    """
+    env = parallel_env(render_mode=render_mode)
+    env = parallel_to_aec(env)
+    return env
 
+
+class parallel_env(ParallelEnv):
     metadata = {
-        "render_modes": ["human", "rgb_array"],
-        "name": "terrarium_v0",
-        "is_parallelizable": True,
-        "render_fps": const.FPS,
-        "has_manual_policy": True,
+        "render_modes": ["human"],
+        "name": "terrarium"
     }
 
-    def __init__(self,x,y):
-        """The init method takes in environment arguments.
-
-        Should define the following attributes:
-        - escape x and y coordinates
-        - guard x and y coordinates
-        - prisoner x and y coordinates
-        - timestamp
+    def __init__(self, render_mode=None):
+        """
+        The init method takes in environment arguments and should define the following attributes:
         - possible_agents
+        - render_mode
 
         Note: as of v1.18.1, the action_spaces and observation_spaces attributes are deprecated.
         Spaces should be defined in the action_space() and observation_space() methods.
@@ -48,152 +72,112 @@ class raw_env(ParallelEnv, EzPickle):
 
         These attributes should not be changed after initialization.
         """
-        EzPickle.__init__(self)
-        self.escape_y = None
-        self.escape_x = None
-        self.guard_y = None
-        self.guard_x = None
-        self.prisoner_y = None
-        self.prisoner_x = None
-        self.timestep = None
+        self.possible_agents = ["player_" + str(r) for r in range(2)]
 
-        self.agents = ["prisoner", "guard"]
-        self.possible_agents = self.agents
-        self.action_spaces = dict(
-            zip(self.agents, [Discrete(4) for _ in enumerate(self.agents)])
+        # optional: a mapping between agent name and ID
+        self.agent_name_mapping = dict(
+            zip(self.possible_agents, list(range(len(self.possible_agents))))
         )
-        self.observation_spaces = dict(
-            zip(
-                self.agents,
-                [MultiDiscrete([7 * 7] * 3) for _ in enumerate(self.agents)],
+        self.render_mode = render_mode
+
+    # Observation space should be defined here.
+    # lru_cache allows observation and action spaces to be memoized, reducing clock cycles required to get each agent's space.
+    # If your spaces change over time, remove this line (disable caching).
+    @functools.lru_cache(maxsize=None)
+    def observation_space(self, agent):
+        # gymnasium spaces are defined and documented here: https://gymnasium.farama.org/api/spaces/
+        return Discrete(4)
+
+    # Action space should be defined here.
+    # If your spaces change over time, remove this line (disable caching).
+    @functools.lru_cache(maxsize=None)
+    def action_space(self, agent):
+        return Discrete(3)
+
+    def render(self):
+        """
+        Renders the environment. In human mode, it can print to terminal, open
+        up a graphical window, or open up some other display that a human can see and understand.
+        """
+        if self.render_mode is None:
+            gymnasium.logger.warn(
+                "You are calling render method without specifying any render mode."
             )
-        )
+            return
+
+        if len(self.agents) == 2:
+            string = "Current state: Agent1: {} , Agent2: {}".format(
+                MOVES[self.state[self.agents[0]]], MOVES[self.state[self.agents[1]]]
+            )
+        else:
+            string = "Game over"
+        print(string)
+
+    def close(self):
+        """
+        Close should release any graphical displays, subprocesses, network connections
+        or any other environment data which should not be kept around after the
+        user is no longer using the environment.
+        """
+        pass
 
     def reset(self, seed=None, options=None):
-        """Reset set the environment to a starting point.
-
-        It needs to initialize the following attributes:
-        - agents
-        - timestamp
-        - prisoner x and y coordinates
-        - guard x and y coordinates
-        - escape x and y coordinates
-        - observation
-        - infos
-
-        And must set up the environment so that render(), step(), and observe() can be called without issues.
         """
-        self.agents = self.possible_agents
-        self.timestep = 0
-
-        self.prisoner_x = 0
-        self.prisoner_y = 0
-
-        self.guard_x = 6
-        self.guard_y = 6
-
-        self.escape_x = random.randint(2, 5)
-        self.escape_y = random.randint(2, 5)
-
-        observations = {
-            a: (
-                self.prisoner_x + 7 * self.prisoner_y,
-                self.guard_x + 7 * self.guard_y,
-                self.escape_x + 7 * self.escape_y,
-            )
-            for a in self.agents
-        }
-
-        # Get dummy infos. Necessary for proper parallel_to_aec conversion
-        infos = {a: {} for a in self.agents}
+        Reset needs to initialize the `agents` attribute and must set up the
+        environment so that render(), and step() can be called without issues.
+        Here it initializes the `num_moves` variable which counts the number of
+        hands that are played.
+        Returns the observations for each agent
+        """
+        self.agents = self.possible_agents[:]
+        self.num_moves = 0
+        observations = {agent: NONE for agent in self.agents}
+        infos = {agent: {} for agent in self.agents}
+        self.state = observations
 
         return observations, infos
 
     def step(self, actions):
-        """Takes in an action for the current agent (specified by agent_selection).
-
-        Needs to update:
-        - prisoner x and y coordinates
-        - guard x and y coordinates
+        """
+        step(action) takes in an action for each agent and should return the
+        - observations
+        - rewards
         - terminations
         - truncations
-        - rewards
-        - timestamp
         - infos
-
-        And any internal state used by observe() or render()
+        dicts where each dict looks like {agent_1: item_1, agent_2: item_2}
         """
-        # Execute actions
-        prisoner_action = actions["prisoner"]
-        guard_action = actions["guard"]
+        # If a user passes in actions with no agents, then just return empty observations, etc.
+        if not actions:
+            self.agents = []
+            return {}, {}, {}, {}, {}
 
-        if prisoner_action == 0 and self.prisoner_x > 0:
-            self.prisoner_x -= 1
-        elif prisoner_action == 1 and self.prisoner_x < 6:
-            self.prisoner_x += 1
-        elif prisoner_action == 2 and self.prisoner_y > 0:
-            self.prisoner_y -= 1
-        elif prisoner_action == 3 and self.prisoner_y < 6:
-            self.prisoner_y += 1
+        # rewards for all agents are placed in the rewards dictionary to be returned
+        rewards = {}
+        rewards[self.agents[0]], rewards[self.agents[1]] = REWARD_MAP[
+            (actions[self.agents[0]], actions[self.agents[1]])
+        ]
 
-        if guard_action == 0 and self.guard_x > 0:
-            self.guard_x -= 1
-        elif guard_action == 1 and self.guard_x < 6:
-            self.guard_x += 1
-        elif guard_action == 2 and self.guard_y > 0:
-            self.guard_y -= 1
-        elif guard_action == 3 and self.guard_y < 6:
-            self.guard_y += 1
+        terminations = {agent: False for agent in self.agents}
 
-        # Check termination conditions
-        terminations = {a: False for a in self.agents}
-        rewards = {a: 0 for a in self.agents}
-        if self.prisoner_x == self.guard_x and self.prisoner_y == self.guard_y:
-            rewards = {"prisoner": -1, "guard": 1}
-            terminations = {a: True for a in self.agents}
+        self.num_moves += 1
+        env_truncation = self.num_moves >= NUM_ITERS
+        truncations = {agent: env_truncation for agent in self.agents}
 
-        elif self.prisoner_x == self.escape_x and self.prisoner_y == self.escape_y:
-            rewards = {"prisoner": 1, "guard": -1}
-            terminations = {a: True for a in self.agents}
-
-        # Check truncation conditions (overwrites termination conditions)
-        truncations = {a: False for a in self.agents}
-        if self.timestep > 100:
-            rewards = {"prisoner": 0, "guard": 0}
-            truncations = {"prisoner": True, "guard": True}
-        self.timestep += 1
-
-        # Get observations
+        # current observation is just the other player's most recent action
         observations = {
-            a: (
-                self.prisoner_x + 7 * self.prisoner_y,
-                self.guard_x + 7 * self.guard_y,
-                self.escape_x + 7 * self.escape_y,
-            )
-            for a in self.agents
+            self.agents[i]: int(actions[self.agents[1 - i]])
+            for i in range(len(self.agents))
         }
+        self.state = observations
 
-        # Get dummy infos (not used in this example)
-        infos = {a: {} for a in self.agents}
+        # typically there won't be any information in the infos, but there must
+        # still be an entry for each agent
+        infos = {agent: {} for agent in self.agents}
 
-        if any(terminations.values()) or all(truncations.values()):
+        if env_truncation:
             self.agents = []
 
+        if self.render_mode == "human":
+            self.render()
         return observations, rewards, terminations, truncations, infos
-
-    def render(self):
-        """Renders the environment."""
-        grid = np.full((7, 7), " ")
-        grid[self.prisoner_y, self.prisoner_x] = "P"
-        grid[self.guard_y, self.guard_x] = "G"
-        grid[self.escape_y, self.escape_x] = "E"
-        print(f"{grid} \n")
-
-
-
-
-    def observation_space(self, agent):
-        return self.observation_spaces[agent]
-
-    def action_space(self, agent):
-        return self.action_spaces[agent]

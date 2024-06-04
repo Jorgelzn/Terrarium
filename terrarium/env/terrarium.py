@@ -1,157 +1,199 @@
+import functools
 import random
 from copy import copy
 
 import numpy as np
+from gymnasium.spaces import Discrete, MultiDiscrete
+from gymnasium.utils import EzPickle
 
 from pettingzoo import ParallelEnv
 
-import pygame
-from .engine import Food,Agent,Obstacle
-from gymnasium.spaces import Discrete
+__all__ = ["env", "parallel_env", "raw_env"]
 
-class env(ParallelEnv):
+def env(**kwargs):
+    env = raw_env(**kwargs)
+    #env = wrappers.AssertOutOfBoundsWrapper(env)
+    #env = wrappers.OrderEnforcingWrapper(env)
+    return env
+
+parallel_env = env
+
+class raw_env(ParallelEnv, EzPickle):
+    """The metadata holds environment constants.
+
+    The "name" metadata allows the environment to be pretty printed.
+    """
 
     metadata = {
-        "name": "terrarium"
+        "render_modes": ["human", "rgb_array"],
+        "name": "terrarium_v0",
+        "is_parallelizable": True,
+        "render_fps": const.FPS,
+        "has_manual_policy": True,
     }
 
-    def __init__(self,settings,render_mode):
+    def __init__(self,x,y):
+        """The init method takes in environment arguments.
 
-        self.timestep = 0
-        self.possible_agents = ["animal_"+str(idx) for idx in range(settings["agents"])]
-        self.running = True
-        self.friction = 0.1
-        self.settings = settings
-        self.render_mode = render_mode
-        self.screen_dim = (1280, 500)
-        
-        self.elements = []
-        for obj_def in self.settings:
-            for obj_num in range(settings[obj_def]):
-                created = False
-                while not created:
-                    pos = np.array([random.uniform(0,self.screen_dim[0]), random.uniform(0,self.screen_dim[1])])
-                    if obj_def ==  "agents":
-                        obj = Agent(pos,40,4,random.randint(0, 360),200,"black","animal_"+str(obj_num))
-                    elif obj_def == "obstacles":
-                        obj = Obstacle(pos, np.array([random.uniform(0,300),random.uniform(0,300)]), "black")
-                    elif obj_def == "food":
-                        obj = Food(pos,30,"green")
-                    collisions = [elem for elem in self.elements if elem.collision_rect.colliderect(obj.collision_rect)]
-                    if not collisions:
-                            self.elements.append(obj)
-                            created = True
-        self.init_elements = copy(self.elements)
-        self.agents_obs = self.elements[:self.settings["agents"]]
-        self.elements = self.elements[self.settings["agents"]+1:]
+        Should define the following attributes:
+        - escape x and y coordinates
+        - guard x and y coordinates
+        - prisoner x and y coordinates
+        - timestamp
+        - possible_agents
 
+        Note: as of v1.18.1, the action_spaces and observation_spaces attributes are deprecated.
+        Spaces should be defined in the action_space() and observation_space() methods.
+        If these methods are not overridden, spaces will be inferred from self.observation_spaces/action_spaces, raising a warning.
+
+        These attributes should not be changed after initialization.
+        """
+        EzPickle.__init__(self)
+        self.escape_y = None
+        self.escape_x = None
+        self.guard_y = None
+        self.guard_x = None
+        self.prisoner_y = None
+        self.prisoner_x = None
+        self.timestep = None
+
+        self.agents = ["prisoner", "guard"]
+        self.possible_agents = self.agents
+        self.action_spaces = dict(
+            zip(self.agents, [Discrete(4) for _ in enumerate(self.agents)])
+        )
+        self.observation_spaces = dict(
+            zip(
+                self.agents,
+                [MultiDiscrete([7 * 7] * 3) for _ in enumerate(self.agents)],
+            )
+        )
 
     def reset(self, seed=None, options=None):
+        """Reset set the environment to a starting point.
 
-        self.elements = copy(self.init_elements)
-        self.agents_obs = self.elements[:self.settings["agents"]]
-        self.elements = self.elements[self.settings["agents"]+1:]
-        self.agents = [a.agent_id for a in self.agents_obs]
-        self.observation_spaces = {agent.agent_id:agent.obs for agent in self.agents_obs}
-        self.action_spaces = {agent.agent_id:Discrete(6) for agent in self.agents_obs}
+        It needs to initialize the following attributes:
+        - agents
+        - timestamp
+        - prisoner x and y coordinates
+        - guard x and y coordinates
+        - escape x and y coordinates
+        - observation
+        - infos
+
+        And must set up the environment so that render(), step(), and observe() can be called without issues.
+        """
+        self.agents = self.possible_agents
         self.timestep = 0
 
-        observations = {agent.agent_id:agent.collision_distance for agent in self.agents_obs}
+        self.prisoner_x = 0
+        self.prisoner_y = 0
+
+        self.guard_x = 6
+        self.guard_y = 6
+
+        self.escape_x = random.randint(2, 5)
+        self.escape_y = random.randint(2, 5)
+
+        observations = {
+            a: (
+                self.prisoner_x + 7 * self.prisoner_y,
+                self.guard_x + 7 * self.guard_y,
+                self.escape_x + 7 * self.escape_y,
+            )
+            for a in self.agents
+        }
 
         # Get dummy infos. Necessary for proper parallel_to_aec conversion
         infos = {a: {} for a in self.agents}
 
         return observations, infos
 
+    def step(self, actions):
+        """Takes in an action for the current agent (specified by agent_selection).
 
-    def render(self):
-        self.screen = pygame.Surface(self.screen_dim)
-        # clean screen
-        self.screen.fill("white")
-        """Renders the environment."""
-        for elem in self.elements:
-            elem.draw(self.screen)
-        for agent in self.agents_obs:
-            agent.draw(self.screen)
+        Needs to update:
+        - prisoner x and y coordinates
+        - guard x and y coordinates
+        - terminations
+        - truncations
+        - rewards
+        - timestamp
+        - infos
 
-        pixel_array = pygame.surfarray.array3d(self.screen)
-        pixel_array = np.transpose(pixel_array,(1,0,2))
+        And any internal state used by observe() or render()
+        """
+        # Execute actions
+        prisoner_action = actions["prisoner"]
+        guard_action = actions["guard"]
 
-        return pixel_array
+        if prisoner_action == 0 and self.prisoner_x > 0:
+            self.prisoner_x -= 1
+        elif prisoner_action == 1 and self.prisoner_x < 6:
+            self.prisoner_x += 1
+        elif prisoner_action == 2 and self.prisoner_y > 0:
+            self.prisoner_y -= 1
+        elif prisoner_action == 3 and self.prisoner_y < 6:
+            self.prisoner_y += 1
 
-    def observation_space(self, agent):
-        return self.agents_obs[self.possible_agents.index(agent)].obs
+        if guard_action == 0 and self.guard_x > 0:
+            self.guard_x -= 1
+        elif guard_action == 1 and self.guard_x < 6:
+            self.guard_x += 1
+        elif guard_action == 2 and self.guard_y > 0:
+            self.guard_y -= 1
+        elif guard_action == 3 and self.guard_y < 6:
+            self.guard_y += 1
 
-
-    def action_space(self, agent):
-        return self.agents_obs[self.possible_agents.index(agent)].acts
-
-
-    def step(self,actions):
-        rewards = {a: 0 for a in self.agents}
-        for idx,agent in enumerate(self.agents_obs):
-            collisions = [idx for idx,elem in enumerate(self.elements) if elem.collision_rect.colliderect(agent.collision_rect)]
-            agents_collisions=[idx for idx,a in enumerate(self.agents_obs) if a.collision_rect.colliderect(agent.collision_rect) and a!=agent]
-            if not collisions and not agents_collisions:
-                agent.move(agent.actions[actions[agent.agent_id]],self.friction)
-            else:
-                bounce = True
-                for c in collisions:
-                    if type(self.elements[c]) is Food:
-                        self.elements.pop(c)
-                        rewards[agent.agent_id]+=1
-                        bounce = False
-                        break
-                if bounce:
-                    agent.dv = -agent.dv
-
-            agent.update()
-
-            for idx,vision in enumerate(agent.vision):
-                collided = False
-                for a in self.agents_obs:
-                    if a!=agent:
-                        for elem in self.elements:
-                            line_collide_agent = a.collision_rect.clipline(agent.pos,vision)
-                            line_collide = elem.collision_rect.clipline(agent.pos,vision) 
-                            if line_collide or line_collide_agent:
-                                if line_collide:
-                                    agent.vision[idx]=np.array(line_collide[0])
-                                elif line_collide_agent:
-                                    agent.vision[idx]=np.array(line_collide_agent[0])
-                                agent.vision_color[idx]="red"
-                                agent.collision_distance[idx] = np.sqrt((agent.pos[0]-vision[0])**2+(agent.pos[1]-vision[1])**2)-agent.radius
-                                collided=True
-                if not collided:
-                    agent.vision_color[idx]="black"
-                    agent.collision_distance[idx]=999
-                    
         # Check termination conditions
         terminations = {a: False for a in self.agents}
-        if Food not in [type(elem) for elem in self.elements]:
-            rewards = {a:1 for a in self.agents}
+        rewards = {a: 0 for a in self.agents}
+        if self.prisoner_x == self.guard_x and self.prisoner_y == self.guard_y:
+            rewards = {"prisoner": -1, "guard": 1}
             terminations = {a: True for a in self.agents}
-            self.agents = []
-            self.agents_obs = []
-            self.running = False
 
+        elif self.prisoner_x == self.escape_x and self.prisoner_y == self.escape_y:
+            rewards = {"prisoner": 1, "guard": -1}
+            terminations = {a: True for a in self.agents}
 
         # Check truncation conditions (overwrites termination conditions)
         truncations = {a: False for a in self.agents}
-        if self.timestep > 100000:
-            rewards = {a:0 for a in self.agents}
-            truncations = {a: True for a in self.agents}
-            self.agents = []
-            self.agents_obs = []
+        if self.timestep > 100:
+            rewards = {"prisoner": 0, "guard": 0}
+            truncations = {"prisoner": True, "guard": True}
         self.timestep += 1
 
         # Get observations
-        observations = {a.agent_id:agent.collision_distance for a in self.agents_obs}
-
+        observations = {
+            a: (
+                self.prisoner_x + 7 * self.prisoner_y,
+                self.guard_x + 7 * self.guard_y,
+                self.escape_x + 7 * self.escape_y,
+            )
+            for a in self.agents
+        }
 
         # Get dummy infos (not used in this example)
-        infos = {a:{} for a in self.agents}
+        infos = {a: {} for a in self.agents}
+
+        if any(terminations.values()) or all(truncations.values()):
+            self.agents = []
 
         return observations, rewards, terminations, truncations, infos
 
+    def render(self):
+        """Renders the environment."""
+        grid = np.full((7, 7), " ")
+        grid[self.prisoner_y, self.prisoner_x] = "P"
+        grid[self.guard_y, self.guard_x] = "G"
+        grid[self.escape_y, self.escape_x] = "E"
+        print(f"{grid} \n")
 
+
+
+
+    def observation_space(self, agent):
+        return self.observation_spaces[agent]
+
+    def action_space(self, agent):
+        return self.action_spaces[agent]

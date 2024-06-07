@@ -7,6 +7,7 @@ from gymnasium.spaces import Discrete
 from pettingzoo import ParallelEnv
 from pettingzoo.utils import parallel_to_aec, wrappers
 from terrarium.env.src import constants as const
+from terrarium.env.src.Camera import Camera
 
 import numpy as np
 
@@ -46,7 +47,7 @@ class parallel_env(ParallelEnv):
         "render_fps": const.FPS
     }
 
-    def __init__(self, render_mode=None,num_agents=4):
+    def __init__(self, render_mode=None,num_agents=4,voxels=10):
         """
         The init method takes in environment arguments and should define the following attributes:
         - possible_agents
@@ -64,11 +65,12 @@ class parallel_env(ParallelEnv):
         self.frames = 0
         self.render_mode = render_mode
         self.screen = None
-
+        self.camera = None
+        self.world_size = voxels*const.BLOCK_SIZE
         self.grid = []
-        for y in range(0, const.SCREEN_HEIGHT, const.BLOCK_SIZE):
+        for y in range(0, self.world_size, const.BLOCK_SIZE):
             self.grid.append([])
-            for x in range(0, const.SCREEN_WIDTH, const.BLOCK_SIZE):
+            for x in range(0, self.world_size, const.BLOCK_SIZE):
                 self.grid[-1].append(pygame.Rect(x, y, const.BLOCK_SIZE, const.BLOCK_SIZE))
 
 
@@ -102,9 +104,21 @@ class parallel_env(ParallelEnv):
                 self.screen = pygame.display.set_mode(
                     [const.SCREEN_WIDTH, const.SCREEN_HEIGHT]
                 )
+                self.camera = Camera(self.world_size/2-const.SCREEN_WIDTH, self.world_size/2-const.SCREEN_HEIGHT, const.SCREEN_WIDTH, const.SCREEN_HEIGHT, self.world_size)
                 pygame.display.set_caption("Terrarium")
             elif self.render_mode == "rgb_array":
                 self.screen = pygame.Surface((const.SCREEN_WIDTH, const.SCREEN_HEIGHT))
+
+        for event in pygame.event.get():
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if event.button == 1:  # Left mouse button
+                    self.camera.start_drag(event.pos)
+            elif event.type == pygame.MOUSEBUTTONUP:
+                if event.button == 1:  # Left mouse button
+                    self.camera.stop_drag()
+            elif event.type == pygame.MOUSEMOTION:
+                if self.camera.dragging:
+                    self.camera.update_drag(event.pos)
 
         self.draw()
 
@@ -121,12 +135,16 @@ class parallel_env(ParallelEnv):
     def draw(self):
         self.screen.fill((100, 100, 100))
 
-        pygame.draw.rect(self.screen, (255, 100, 100), self.grid[0][-1])
+        pygame.draw.rect(self.screen, (255, 100, 100), self.camera.apply(self.grid[0][0]))
+        pygame.draw.rect(self.screen, (255, 100, 100), self.camera.apply(self.grid[0][-1]))
+        pygame.draw.rect(self.screen, (255, 100, 100), self.camera.apply(self.grid[-1][0]))
+        pygame.draw.rect(self.screen, (255, 100, 100), self.camera.apply(self.grid[-1][-1]))
 
         for row in range(len(self.grid)):
             for colum,voxel in enumerate(self.grid[row]):
-                pygame.draw.rect(self.screen, (255, 255, 255), voxel,1)
+                pygame.draw.rect(self.screen, (255, 255, 255), self.camera.apply(voxel),1)
 
+        print(self.camera.camera)
 
     def close(self):
         """

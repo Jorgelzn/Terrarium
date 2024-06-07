@@ -1,29 +1,14 @@
 import functools
 
 import gymnasium
+import pygame
 from gymnasium.spaces import Discrete
 
 from pettingzoo import ParallelEnv
 from pettingzoo.utils import parallel_to_aec, wrappers
+from terrarium.env.src import constants as const
 
-ROCK = 0
-PAPER = 1
-SCISSORS = 2
-NONE = 3
-MOVES = ["ROCK", "PAPER", "SCISSORS", "None"]
-NUM_ITERS = 100
-REWARD_MAP = {
-    (ROCK, ROCK): (0, 0),
-    (ROCK, PAPER): (-1, 1),
-    (ROCK, SCISSORS): (1, -1),
-    (PAPER, ROCK): (1, -1),
-    (PAPER, PAPER): (0, 0),
-    (PAPER, SCISSORS): (-1, 1),
-    (SCISSORS, ROCK): (-1, 1),
-    (SCISSORS, PAPER): (1, -1),
-    (SCISSORS, SCISSORS): (0, 0),
-}
-
+import numpy as np
 
 def env(render_mode=None):
     """
@@ -57,10 +42,11 @@ def raw_env(render_mode=None):
 class parallel_env(ParallelEnv):
     metadata = {
         "render_modes": ["human"],
-        "name": "terrarium"
+        "name": "terrarium",
+        "render_fps": const.FPS
     }
 
-    def __init__(self, render_mode=None):
+    def __init__(self, render_mode=None,num_agents=4):
         """
         The init method takes in environment arguments and should define the following attributes:
         - possible_agents
@@ -72,24 +58,28 @@ class parallel_env(ParallelEnv):
 
         These attributes should not be changed after initialization.
         """
-        self.possible_agents = ["player_" + str(r) for r in range(2)]
+        self.possible_agents = ["player_" + str(r) for r in range(num_agents)]
 
-        # optional: a mapping between agent name and ID
-        self.agent_name_mapping = dict(
-            zip(self.possible_agents, list(range(len(self.possible_agents))))
-        )
+        # Game Status
+        self.frames = 0
         self.render_mode = render_mode
+        self.screen = None
 
-    # Observation space should be defined here.
-    # lru_cache allows observation and action spaces to be memoized, reducing clock cycles required to get each agent's space.
-    # If your spaces change over time, remove this line (disable caching).
+        self.grid = []
+        for y in range(0, const.SCREEN_HEIGHT, const.BLOCK_SIZE):
+            self.grid.append([])
+            for x in range(0, const.SCREEN_WIDTH, const.BLOCK_SIZE):
+                self.grid[-1].append(pygame.Rect(x, y, const.BLOCK_SIZE, const.BLOCK_SIZE))
+
+
+        if self.render_mode == "human":
+            self.clock = pygame.time.Clock()
+
     @functools.lru_cache(maxsize=None)
     def observation_space(self, agent):
         # gymnasium spaces are defined and documented here: https://gymnasium.farama.org/api/spaces/
         return Discrete(4)
 
-    # Action space should be defined here.
-    # If your spaces change over time, remove this line (disable caching).
     @functools.lru_cache(maxsize=None)
     def action_space(self, agent):
         return Discrete(3)
@@ -105,13 +95,38 @@ class parallel_env(ParallelEnv):
             )
             return
 
-        if len(self.agents) == 2:
-            string = "Current state: Agent1: {} , Agent2: {}".format(
-                MOVES[self.state[self.agents[0]]], MOVES[self.state[self.agents[1]]]
-            )
-        else:
-            string = "Game over"
-        print(string)
+        if self.screen is None:
+            pygame.init()
+
+            if self.render_mode == "human":
+                self.screen = pygame.display.set_mode(
+                    [const.SCREEN_WIDTH, const.SCREEN_HEIGHT]
+                )
+                pygame.display.set_caption("Terrarium")
+            elif self.render_mode == "rgb_array":
+                self.screen = pygame.Surface((const.SCREEN_WIDTH, const.SCREEN_HEIGHT))
+
+        self.draw()
+
+        observation = np.array(pygame.surfarray.pixels3d(self.screen))
+        if self.render_mode == "human":
+            pygame.display.flip()
+            self.clock.tick(self.metadata["render_fps"])
+        return (
+            np.transpose(observation, axes=(1, 0, 2))
+            if self.render_mode == "rgb_array"
+            else None
+        )
+
+    def draw(self):
+        self.screen.fill((100, 100, 100))
+
+        pygame.draw.rect(self.screen, (255, 100, 100), self.grid[0][-1])
+
+        for row in range(len(self.grid)):
+            for colum,voxel in enumerate(self.grid[row]):
+                pygame.draw.rect(self.screen, (255, 255, 255), voxel,1)
+
 
     def close(self):
         """
@@ -119,21 +134,20 @@ class parallel_env(ParallelEnv):
         or any other environment data which should not be kept around after the
         user is no longer using the environment.
         """
-        pass
+        if self.screen is not None:
+            pygame.quit()
+            self.screen = None
 
     def reset(self, seed=None, options=None):
         """
         Reset needs to initialize the `agents` attribute and must set up the
         environment so that render(), and step() can be called without issues.
-        Here it initializes the `num_moves` variable which counts the number of
-        hands that are played.
         Returns the observations for each agent
         """
         self.agents = self.possible_agents[:]
-        self.num_moves = 0
-        observations = {agent: NONE for agent in self.agents}
+        self.time_steps = 0
+        observations = {agent: {} for agent in self.agents}
         infos = {agent: {} for agent in self.agents}
-        self.state = observations
 
         return observations, infos
 
@@ -153,23 +167,16 @@ class parallel_env(ParallelEnv):
             return {}, {}, {}, {}, {}
 
         # rewards for all agents are placed in the rewards dictionary to be returned
-        rewards = {}
-        rewards[self.agents[0]], rewards[self.agents[1]] = REWARD_MAP[
-            (actions[self.agents[0]], actions[self.agents[1]])
-        ]
+        rewards = {agent: {} for agent in self.agents}
 
         terminations = {agent: False for agent in self.agents}
 
-        self.num_moves += 1
-        env_truncation = self.num_moves >= NUM_ITERS
+        self.time_steps += 1
+        env_truncation = self.time_steps >= const.MAX_STEPS
         truncations = {agent: env_truncation for agent in self.agents}
 
         # current observation is just the other player's most recent action
-        observations = {
-            self.agents[i]: int(actions[self.agents[1 - i]])
-            for i in range(len(self.agents))
-        }
-        self.state = observations
+        observations = {agent: {} for agent in self.agents}
 
         # typically there won't be any information in the infos, but there must
         # still be an entry for each agent

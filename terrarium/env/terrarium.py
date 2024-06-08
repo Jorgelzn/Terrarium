@@ -63,7 +63,7 @@ class parallel_env(ParallelEnv):
         """
         self.possible_agents = ["agent_" + str(r) for r in range(num_agents)]
         self.agents_list = []
-        self.action_masks = np.ones((num_agents, self.action_space(None).n))
+        self.action_masks = np.ones((num_agents, self.action_space(None).n),dtype=np.int8)
         # Game Status
         self.frames = 0
         self.render_mode = render_mode
@@ -198,8 +198,12 @@ class parallel_env(ParallelEnv):
         pygame.draw.rect(self.screen, (255, 100, 100), self.camera.apply(self.grid[-1][-1]))
         #pygame.draw.rect(self.screen, (100, 255, 100),self.camera.apply(self.grid[len(self.grid) // 2][len(self.grid[0]) // 2]))
 
-        for agent in self.agents_list:
-            pygame.draw.rect(self.screen, (100, 100, 255), self.camera.apply(self.grid[agent.y][agent.x]))
+        for idx,agent in enumerate(self.agents_list):
+            try:
+                pygame.draw.rect(self.screen, (100, 100, 255), self.camera.apply(self.grid[agent.y][agent.x]))
+            except:
+                print(idx,agent.x,agent.y)
+                exit()
 
         for row in range(len(self.grid)):
             for colum, voxel in enumerate(self.grid[row]):

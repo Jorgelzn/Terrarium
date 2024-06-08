@@ -10,7 +10,6 @@ if __name__ == "__main__":
 
     while env.agents:
         # this is where you would insert your policy
-        actions = {agent: env.action_space(agent).sample() for agent in env.agents}
-        #print(actions)
+        actions = {agent: env.action_space(agent).sample(observations[agent]["action_mask"]) for agent in env.agents}
         observations, rewards, terminations, truncations, infos = env.step(actions)
     env.close()

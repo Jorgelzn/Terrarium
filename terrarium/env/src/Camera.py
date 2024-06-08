@@ -1,12 +1,15 @@
 
 import pygame
+from terrarium.env.src import constants as const
 
 class Camera:
-    def __init__(self, x, y, width, height,world_size):
-        self.camera = pygame.Rect(x, y, width, height)
+    def __init__(self, world_size):
+
         self.world_size = world_size
-        self.width = width
-        self.height = height
+        self.width = const.SCREEN_WIDTH
+        self.height = const.SCREEN_HEIGHT
+        self.camera = pygame.Rect(-self.world_size/2+self.width/2, -self.world_size/2+self.height/2
+                                , self.width, self.height)
         self.dragging = False
         self.mouse_start = None
 
@@ -30,11 +33,11 @@ class Camera:
             self.mouse_start = mouse_pos
 
             # Limit scrolling to map size
-            if self.camera.x < 0:
+            if self.camera.x > 0:
                 self.camera.x = 0
-            elif self.camera.x > self.world_size:
-                self.camera.x = self.world_size
-            if self.camera.y < 0:
+            elif self.camera.x < -self.world_size+self.height:
+                self.camera.x = -self.world_size+self.height
+            if self.camera.y > 0:
                 self.camera.y = 0
-            elif self.camera.y > self.world_size:
-                self.camera.y = self.world_size
+            elif self.camera.y < -self.world_size+self.height:
+                self.camera.y = -self.world_size+self.height

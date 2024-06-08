@@ -47,7 +47,7 @@ class parallel_env(ParallelEnv):
         "render_fps": const.FPS
     }
 
-    def __init__(self, render_mode=None,num_agents=4,voxels=10):
+    def __init__(self, render_mode=None,num_agents=4,voxels=20):
         """
         The init method takes in environment arguments and should define the following attributes:
         - possible_agents
@@ -104,7 +104,7 @@ class parallel_env(ParallelEnv):
                 self.screen = pygame.display.set_mode(
                     [const.SCREEN_WIDTH, const.SCREEN_HEIGHT]
                 )
-                self.camera = Camera(self.world_size/2-const.SCREEN_WIDTH, self.world_size/2-const.SCREEN_HEIGHT, const.SCREEN_WIDTH, const.SCREEN_HEIGHT, self.world_size)
+                self.camera = Camera(self.world_size)
                 pygame.display.set_caption("Terrarium")
             elif self.render_mode == "rgb_array":
                 self.screen = pygame.Surface((const.SCREEN_WIDTH, const.SCREEN_HEIGHT))
@@ -139,12 +139,13 @@ class parallel_env(ParallelEnv):
         pygame.draw.rect(self.screen, (255, 100, 100), self.camera.apply(self.grid[0][-1]))
         pygame.draw.rect(self.screen, (255, 100, 100), self.camera.apply(self.grid[-1][0]))
         pygame.draw.rect(self.screen, (255, 100, 100), self.camera.apply(self.grid[-1][-1]))
+        pygame.draw.rect(self.screen, (100, 255, 100), self.camera.apply(self.grid[len(self.grid)//2][len(self.grid[0])//2]))
 
         for row in range(len(self.grid)):
             for colum,voxel in enumerate(self.grid[row]):
                 pygame.draw.rect(self.screen, (255, 255, 255), self.camera.apply(voxel),1)
 
-        print(self.camera.camera)
+
 
     def close(self):
         """

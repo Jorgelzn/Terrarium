@@ -110,7 +110,9 @@ class parallel_env(ParallelEnv):
                 self.screen = pygame.Surface((const.SCREEN_WIDTH, const.SCREEN_HEIGHT))
 
         for event in pygame.event.get():
-            if event.type == pygame.MOUSEBUTTONDOWN:
+            if event.type == pygame.QUIT:
+                self.close()
+            elif event.type == pygame.MOUSEBUTTONDOWN:
                 if event.button == 1:  # Left mouse button
                     self.camera.start_drag(event.pos)
             elif event.type == pygame.MOUSEBUTTONUP:
@@ -120,17 +122,17 @@ class parallel_env(ParallelEnv):
                 if self.camera.dragging:
                     self.camera.update_drag(event.pos)
 
-        self.draw()
-
-        observation = np.array(pygame.surfarray.pixels3d(self.screen))
-        if self.render_mode == "human":
-            pygame.display.flip()
-            self.clock.tick(self.metadata["render_fps"])
-        return (
-            np.transpose(observation, axes=(1, 0, 2))
-            if self.render_mode == "rgb_array"
-            else None
-        )
+        if self.screen is not None:
+            self.draw()
+            observation = np.array(pygame.surfarray.pixels3d(self.screen))
+            if self.render_mode == "human":
+                pygame.display.flip()
+                self.clock.tick(self.metadata["render_fps"])
+            return (
+                np.transpose(observation, axes=(1, 0, 2))
+                if self.render_mode == "rgb_array"
+                else None
+            )
 
     def draw(self):
         self.screen.fill((100, 100, 100))
@@ -190,8 +192,11 @@ class parallel_env(ParallelEnv):
 
         terminations = {agent: False for agent in self.agents}
 
+        if self.render_mode == "human":
+            self.render()
+
         self.time_steps += 1
-        env_truncation = self.time_steps >= const.MAX_STEPS
+        env_truncation = self.time_steps >= const.MAX_STEPS or self.screen is None
         truncations = {agent: env_truncation for agent in self.agents}
 
         # current observation is just the other player's most recent action
@@ -204,6 +209,4 @@ class parallel_env(ParallelEnv):
         if env_truncation:
             self.agents = []
 
-        if self.render_mode == "human":
-            self.render()
         return observations, rewards, terminations, truncations, infos

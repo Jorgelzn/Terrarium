@@ -3,13 +3,15 @@ import functools
 import gymnasium
 import pygame
 from gymnasium.spaces import Discrete
-
+import random
 from pettingzoo import ParallelEnv
 from pettingzoo.utils import parallel_to_aec, wrappers
 from terrarium.env.src import constants as const
 from terrarium.env.src.Camera import Camera
+from terrarium.env.src.entity import Entity
 
 import numpy as np
+
 
 def env(render_mode=None):
     """
@@ -47,7 +49,7 @@ class parallel_env(ParallelEnv):
         "render_fps": const.FPS
     }
 
-    def __init__(self, render_mode=None,num_agents=4,voxels=20):
+    def __init__(self, render_mode=None, num_agents=4, voxels=20):
         """
         The init method takes in environment arguments and should define the following attributes:
         - possible_agents
@@ -59,23 +61,124 @@ class parallel_env(ParallelEnv):
 
         These attributes should not be changed after initialization.
         """
-        self.possible_agents = ["player_" + str(r) for r in range(num_agents)]
-
+        self.possible_agents = ["agent_" + str(r) for r in range(num_agents)]
+        self.agents_list = []
+        self.action_masks = np.ones((num_agents, self.action_space(None).n))
         # Game Status
         self.frames = 0
         self.render_mode = render_mode
         self.screen = None
         self.camera = None
-        self.world_size = voxels*const.BLOCK_SIZE
+        self.voxels = voxels
+        self.world_size = self.voxels * const.BLOCK_SIZE
         self.grid = []
         for y in range(0, self.world_size, const.BLOCK_SIZE):
             self.grid.append([])
             for x in range(0, self.world_size, const.BLOCK_SIZE):
                 self.grid[-1].append(pygame.Rect(x, y, const.BLOCK_SIZE, const.BLOCK_SIZE))
 
-
         if self.render_mode == "human":
             self.clock = pygame.time.Clock()
+
+    def step(self, actions):
+        """
+        step(action) takes in an action for each agent and should return the
+        - observations
+        - rewards
+        - terminations
+        - truncations
+        - infos
+        dicts where each dict looks like {agent_1: item_1, agent_2: item_2}
+        """
+        # If a user passes in actions with no agents, then just return empty observations, etc.
+        if not actions:
+            self.agents = []
+            return {}, {}, {}, {}, {}
+        else:
+            for idx, agent in enumerate(self.agents_list):
+                agent.do_action(actions["agent_" + str(idx)])
+            self.check_actions()
+
+        # rewards for all agents are placed in the rewards dictionary to be returned
+        rewards = {agent: {} for agent in self.agents}
+
+        terminations = {agent: False for agent in self.agents}
+
+        if self.render_mode == "human":
+            self.render()
+
+        self.time_steps += 1
+        env_truncation = self.time_steps >= const.MAX_STEPS or self.screen is None
+        truncations = {agent: env_truncation for agent in self.agents}
+
+        # current observation is just the other player's most recent action
+        observations = {agent: {
+            "observation": (),
+            "action_mask": self.action_masks[idx]
+        } for idx, agent in enumerate(self.agents)}
+
+        # typically there won't be any information in the infos, but there must
+        # still be an entry for each agent
+        infos = {agent: {} for agent in self.agents}
+
+        if env_truncation:
+            self.agents = []
+
+        return observations, rewards, terminations, truncations, infos
+
+    def reset(self, seed=None, options=None):
+        """
+        Reset needs to initialize the `agents` attribute and must set up the
+        environment so that render(), and step() can be called without issues.
+        Returns the observations for each agent
+        """
+        self.agents = self.possible_agents[:]
+        self.spawn_agents()
+        self.check_actions()
+        self.time_steps = 0
+        observations = {agent: {
+            "observation": (),
+            "action_mask": self.action_masks[idx]
+        } for idx, agent in enumerate(self.agents)}
+        infos = {agent: {} for agent in self.agents}
+
+        return observations, infos
+
+    def spawn_agents(self):
+
+        for _ in range(len(self.agents)):
+            x = random.randrange(0, self.voxels)
+            y = random.randrange(0, self.voxels)
+            while self.occupied(x, y):
+                x = random.randrange(0, self.voxels)
+                y = random.randrange(0, self.voxels)
+
+            self.agents_list.append(Entity(x, y))
+
+    def occupied(self, x, y):
+        for agent in self.agents_list:
+            if x == agent.x and y == agent.y:
+                return True
+        return False
+
+    def check_actions(self):
+        for idx, agent in enumerate(self.agents_list):
+            if agent.y - 1 == 0 or self.occupied(agent.x, agent.y - 1):
+                self.action_masks[idx][0]=0
+            else:
+                self.action_masks[idx][0]=1
+            if agent.y + 1 == self.voxels or self.occupied(agent.x, agent.y + 1):
+                self.action_masks[idx][1]=0
+            else:
+                self.action_masks[idx][1] = 1
+            if agent.x - 1 == 0 or self.occupied(agent.x - 1, agent.y):
+                self.action_masks[idx][2]=0
+            else:
+                self.action_masks[idx][2] = 1
+            if agent.x + 1 == self.voxels or self.occupied(agent.x + 1, agent.y):
+                self.action_masks[idx][3]=0
+            else:
+                self.action_masks[idx][3] = 1
 
     @functools.lru_cache(maxsize=None)
     def observation_space(self, agent):
@@ -84,7 +187,23 @@ class parallel_env(ParallelEnv):
 
     @functools.lru_cache(maxsize=None)
     def action_space(self, agent):
-        return Discrete(3)
+        return Discrete(4)
+
+    def draw(self):
+        self.screen.fill((100, 100, 100))
+
+        pygame.draw.rect(self.screen, (255, 100, 100), self.camera.apply(self.grid[0][0]))
+        pygame.draw.rect(self.screen, (255, 100, 100), self.camera.apply(self.grid[0][-1]))
+        pygame.draw.rect(self.screen, (255, 100, 100), self.camera.apply(self.grid[-1][0]))
+        pygame.draw.rect(self.screen, (255, 100, 100), self.camera.apply(self.grid[-1][-1]))
+        #pygame.draw.rect(self.screen, (100, 255, 100),self.camera.apply(self.grid[len(self.grid) // 2][len(self.grid[0]) // 2]))
+
+        for agent in self.agents_list:
+            pygame.draw.rect(self.screen, (100, 100, 255), self.camera.apply(self.grid[agent.y][agent.x]))
+
+        for row in range(len(self.grid)):
+            for colum, voxel in enumerate(self.grid[row]):
+                pygame.draw.rect(self.screen, (255, 255, 255), self.camera.apply(voxel), 1)
 
     def render(self):
         """
@@ -134,21 +253,6 @@ class parallel_env(ParallelEnv):
                 else None
             )
 
-    def draw(self):
-        self.screen.fill((100, 100, 100))
-
-        pygame.draw.rect(self.screen, (255, 100, 100), self.camera.apply(self.grid[0][0]))
-        pygame.draw.rect(self.screen, (255, 100, 100), self.camera.apply(self.grid[0][-1]))
-        pygame.draw.rect(self.screen, (255, 100, 100), self.camera.apply(self.grid[-1][0]))
-        pygame.draw.rect(self.screen, (255, 100, 100), self.camera.apply(self.grid[-1][-1]))
-        pygame.draw.rect(self.screen, (100, 255, 100), self.camera.apply(self.grid[len(self.grid)//2][len(self.grid[0])//2]))
-
-        for row in range(len(self.grid)):
-            for colum,voxel in enumerate(self.grid[row]):
-                pygame.draw.rect(self.screen, (255, 255, 255), self.camera.apply(voxel),1)
-
-
-
     def close(self):
         """
         Close should release any graphical displays, subprocesses, network connections
@@ -158,55 +262,3 @@ class parallel_env(ParallelEnv):
         if self.screen is not None:
             pygame.quit()
             self.screen = None
-
-    def reset(self, seed=None, options=None):
-        """
-        Reset needs to initialize the `agents` attribute and must set up the
-        environment so that render(), and step() can be called without issues.
-        Returns the observations for each agent
-        """
-        self.agents = self.possible_agents[:]
-        self.time_steps = 0
-        observations = {agent: {} for agent in self.agents}
-        infos = {agent: {} for agent in self.agents}
-
-        return observations, infos
-
-    def step(self, actions):
-        """
-        step(action) takes in an action for each agent and should return the
-        - observations
-        - rewards
-        - terminations
-        - truncations
-        - infos
-        dicts where each dict looks like {agent_1: item_1, agent_2: item_2}
-        """
-        # If a user passes in actions with no agents, then just return empty observations, etc.
-        if not actions:
-            self.agents = []
-            return {}, {}, {}, {}, {}
-
-        # rewards for all agents are placed in the rewards dictionary to be returned
-        rewards = {agent: {} for agent in self.agents}
-
-        terminations = {agent: False for agent in self.agents}
-
-        if self.render_mode == "human":
-            self.render()
-
-        self.time_steps += 1
-        env_truncation = self.time_steps >= const.MAX_STEPS or self.screen is None
-        truncations = {agent: env_truncation for agent in self.agents}
-
-        # current observation is just the other player's most recent action
-        observations = {agent: {} for agent in self.agents}
-
-        # typically there won't be any information in the infos, but there must
-        # still be an entry for each agent
-        infos = {agent: {} for agent in self.agents}
-
-        if env_truncation:
-            self.agents = []
-
-        return observations, rewards, terminations, truncations, infos

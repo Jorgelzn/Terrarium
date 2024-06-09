@@ -62,7 +62,6 @@ class parallel_env(ParallelEnv):
         These attributes should not be changed after initialization.
         """
         self.possible_agents = ["agent_" + str(r) for r in range(num_agents)]
-        self.agents_list = []
         self.action_masks = np.ones((num_agents, self.action_space(None).n),dtype=np.int8)
         # Game Status
         self.frames = 0
@@ -145,7 +144,7 @@ class parallel_env(ParallelEnv):
         return observations, infos
 
     def spawn_agents(self):
-
+        self.agents_list = []
         for _ in range(len(self.agents)):
             x = random.randrange(0, self.voxels)
             y = random.randrange(0, self.voxels)

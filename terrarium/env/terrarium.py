@@ -199,11 +199,7 @@ class parallel_env(ParallelEnv):
         #pygame.draw.rect(self.screen, (100, 255, 100),self.camera.apply(self.grid[len(self.grid) // 2][len(self.grid[0]) // 2]))
 
         for idx,agent in enumerate(self.agents_list):
-            try:
-                pygame.draw.rect(self.screen, (100, 100, 255), self.camera.apply(self.grid[agent.y][agent.x]))
-            except:
-                print(idx,agent.x,agent.y)
-                exit()
+            pygame.draw.rect(self.screen, (100, 100, 255), self.camera.apply(self.grid[agent.y][agent.x]))
 
         for row in range(len(self.grid)):
             for colum, voxel in enumerate(self.grid[row]):
@@ -235,15 +231,17 @@ class parallel_env(ParallelEnv):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.close()
-            elif event.type == pygame.MOUSEBUTTONDOWN:
-                if event.button == 1:  # Left mouse button
-                    self.camera.start_drag(event.pos)
-            elif event.type == pygame.MOUSEBUTTONUP:
-                if event.button == 1:  # Left mouse button
-                    self.camera.stop_drag()
-            elif event.type == pygame.MOUSEMOTION:
-                if self.camera.dragging:
-                    self.camera.update_drag(event.pos)
+
+            if self.world_size > const.SCREEN_WIDTH or self.world_size > const.SCREEN_HEIGHT:
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                    if event.button == 1:  # Left mouse button
+                        self.camera.start_drag(event.pos)
+                elif event.type == pygame.MOUSEBUTTONUP:
+                    if event.button == 1:  # Left mouse button
+                        self.camera.stop_drag()
+                elif event.type == pygame.MOUSEMOTION:
+                    if self.camera.dragging:
+                        self.camera.update_drag(event.pos)
 
         if self.screen is not None:
             self.draw()

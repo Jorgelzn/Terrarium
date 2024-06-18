@@ -2,7 +2,7 @@ import functools
 
 import gymnasium
 import pygame
-from gymnasium.spaces import Discrete
+from gymnasium.spaces import Discrete, Dict, MultiBinary
 import random
 from pettingzoo import ParallelEnv
 from pettingzoo.utils import parallel_to_aec, wrappers
@@ -80,6 +80,10 @@ class parallel_env(ParallelEnv):
         if self.render_mode == "human":
             self.clock = pygame.time.Clock()
 
+        # FOR RLLIB
+        self.action_spaces = {agent: self.action_space(agent) for agent in self.possible_agents}
+        self.observation_spaces = {agent: self.observation_space(agent) for agent in self.possible_agents}
+
     def step(self, actions):
         """
         step(action) takes in an action for each agent and should return the
@@ -100,7 +104,7 @@ class parallel_env(ParallelEnv):
             self.check_actions()
 
         # rewards for all agents are placed in the rewards dictionary to be returned
-        rewards = {agent: {} for agent in self.agents}
+        rewards = {agent: 0 for agent in self.agents}
 
         terminations = {agent: False for agent in self.agents}
 
@@ -113,7 +117,7 @@ class parallel_env(ParallelEnv):
 
         # current observation is just the other player's most recent action
         observations = {agent: {
-            "observation": (),
+            "observation": (0),
             "action_mask": self.action_masks[idx]
         } for idx, agent in enumerate(self.agents)}
 
@@ -137,7 +141,7 @@ class parallel_env(ParallelEnv):
         self.check_actions()
         self.time_steps = 0
         observations = {agent: {
-            "observation": (),
+            "observation": (0),
             "action_mask": self.action_masks[idx]
         } for idx, agent in enumerate(self.agents)}
         infos = {agent: {} for agent in self.agents}
@@ -145,7 +149,7 @@ class parallel_env(ParallelEnv):
         return observations, infos
 
     def spawn_agents(self):
-
+        self.agents_list = []
         for _ in range(len(self.agents)):
             x = random.randrange(0, self.voxels)
             y = random.randrange(0, self.voxels)
@@ -183,7 +187,12 @@ class parallel_env(ParallelEnv):
     @functools.lru_cache(maxsize=None)
     def observation_space(self, agent):
         # gymnasium spaces are defined and documented here: https://gymnasium.farama.org/api/spaces/
-        return Discrete(4)
+
+        return Dict({
+            "observation": Discrete(4),
+            "action_mask": MultiBinary(4)
+            }
+        )
 
     @functools.lru_cache(maxsize=None)
     def action_space(self, agent):

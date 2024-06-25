@@ -23,4 +23,4 @@ if __name__ == '__main__':
         "framework": "torch",
     }
 
-    tune.run("PPO",config=config)
+    tune.run("PPO",config=config,stop={"training_iteration": 1})

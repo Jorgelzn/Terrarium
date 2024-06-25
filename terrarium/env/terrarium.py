@@ -62,7 +62,6 @@ class parallel_env(ParallelEnv):
         These attributes should not be changed after initialization.
         """
         self.possible_agents = ["agent_" + str(r) for r in range(num_agents)]
-        self.action_masks = np.ones((num_agents, self.action_space(None).n),dtype=np.int8)
         # Game Status
         self.frames = 0
         self.render_mode = render_mode
@@ -99,8 +98,10 @@ class parallel_env(ParallelEnv):
             return {}, {}, {}, {}, {}
         else:
             for idx, agent in enumerate(self.agents_list):
-                agent.do_action(actions["agent_" + str(idx)])
-            self.check_actions()
+                action = actions["agent_" + str(idx)]
+                if self.check_action(agent,action):
+                    agent.do_action(action)
+
 
         # rewards for all agents are placed in the rewards dictionary to be returned
         rewards = {agent: 0 for agent in self.agents}
@@ -115,10 +116,7 @@ class parallel_env(ParallelEnv):
         truncations = {agent: env_truncation for agent in self.agents}
 
         # current observation is just the other player's most recent action
-        observations = {agent: {
-            "observation": (0),
-            "action_mask": self.action_masks[idx]
-        } for idx, agent in enumerate(self.agents)}
+        observations = {agent:  (0) for idx, agent in enumerate(self.agents)}
 
         # typically there won't be any information in the infos, but there must
         # still be an entry for each agent
@@ -137,12 +135,9 @@ class parallel_env(ParallelEnv):
         """
         self.agents = self.possible_agents[:]
         self.spawn_agents()
-        self.check_actions()
+
         self.time_steps = 0
-        observations = {agent: {
-            "observation": (0),
-            "action_mask": self.action_masks[idx]
-        } for idx, agent in enumerate(self.agents)}
+        observations = {agent: (0) for idx, agent in enumerate(self.agents)}
         infos = {agent: {} for agent in self.agents}
 
         return observations, infos
@@ -164,34 +159,23 @@ class parallel_env(ParallelEnv):
                 return True
         return False
 
-    def check_actions(self):
-        for idx, agent in enumerate(self.agents_list):
-            if agent.y - 1 == 0 or self.occupied(agent.x, agent.y - 1):
-                self.action_masks[idx][0]=0
-            else:
-                self.action_masks[idx][0]=1
-            if agent.y + 1 == self.voxels or self.occupied(agent.x, agent.y + 1):
-                self.action_masks[idx][1]=0
-            else:
-                self.action_masks[idx][1] = 1
-            if agent.x - 1 == 0 or self.occupied(agent.x - 1, agent.y):
-                self.action_masks[idx][2]=0
-            else:
-                self.action_masks[idx][2] = 1
-            if agent.x + 1 == self.voxels or self.occupied(agent.x + 1, agent.y):
-                self.action_masks[idx][3]=0
-            else:
-                self.action_masks[idx][3] = 1
+    def check_action(self,agent,action):
+        if action == 0 and (agent.y - 1 == 0 or self.occupied(agent.x, agent.y - 1)):
+            return False
+        if action == 1 and (agent.y + 1 == self.voxels or self.occupied(agent.x, agent.y + 1)):
+            return False
+        if action == 2 and (agent.x - 1 == 0 or self.occupied(agent.x - 1, agent.y)):
+            return False
+        if action == 3 and (agent.x + 1 == self.voxels or self.occupied(agent.x + 1, agent.y)):
+            return False
+
+        return True
 
     @functools.lru_cache(maxsize=None)
     def observation_space(self, agent):
         # gymnasium spaces are defined and documented here: https://gymnasium.farama.org/api/spaces/
+        return Discrete(4)
 
-        return Dict({
-            "observation": Discrete(4),
-            "action_mask": MultiBinary(4)
-            }
-        )
 
     @functools.lru_cache(maxsize=None)
     def action_space(self, agent):

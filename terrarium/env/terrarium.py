@@ -9,7 +9,6 @@ from pettingzoo.utils import parallel_to_aec, wrappers
 from terrarium.env.src import constants as const
 from terrarium.env.src.Camera import Camera
 from terrarium.env.src.entity import Entity
-
 import numpy as np
 
 
@@ -74,6 +73,21 @@ class parallel_env(ParallelEnv):
             self.grid.append([])
             for x in range(0, self.world_size, const.BLOCK_SIZE):
                 self.grid[-1].append(pygame.Rect(x, y, const.BLOCK_SIZE, const.BLOCK_SIZE))
+
+        sprite_sheet = pygame.image.load("../terrarium/env/data/animals.png")
+        self.grass = pygame.image.load("../terrarium/env/data/grass.jpg")
+        self.grass = pygame.transform.scale(self.grass, (const.BLOCK_SIZE, const.BLOCK_SIZE))
+        # Create a list of individual sprite surfaces
+        self.sprites = []
+        sprite_width = sprite_sheet.get_width()/4
+        sprite_height = sprite_sheet.get_height()/4
+        for row in range(4):
+            for col in range(4):
+                x = col * sprite_width
+                y = row * sprite_height
+                sprite = sprite_sheet.subsurface(pygame.Rect(x, y, sprite_width, sprite_height))
+                sprite = pygame.transform.scale(sprite, (const.BLOCK_SIZE, const.BLOCK_SIZE))
+                self.sprites.append(sprite)
 
         if self.render_mode == "human":
             self.clock = pygame.time.Clock()
@@ -151,7 +165,7 @@ class parallel_env(ParallelEnv):
                 x = random.randrange(0, self.voxels)
                 y = random.randrange(0, self.voxels)
 
-            self.agents_list.append(Entity(x, y))
+            self.agents_list.append(Entity(x, y, self.sprites[random.randrange(16)]))
 
     def occupied(self, x, y):
         for agent in self.agents_list:
@@ -184,18 +198,24 @@ class parallel_env(ParallelEnv):
     def draw(self):
         self.screen.fill((100, 100, 100))
 
-        pygame.draw.rect(self.screen, (255, 100, 100), self.camera.apply(self.grid[0][0]))
-        pygame.draw.rect(self.screen, (255, 100, 100), self.camera.apply(self.grid[0][-1]))
-        pygame.draw.rect(self.screen, (255, 100, 100), self.camera.apply(self.grid[-1][0]))
-        pygame.draw.rect(self.screen, (255, 100, 100), self.camera.apply(self.grid[-1][-1]))
+        #self.screen.blit(self.sprites[random.randrange(16)],self.camera.apply(self.grid[0][-1]))
+        #pygame.draw.rect(self.screen, (255, 100, 100), self.camera.apply(self.grid[0][0]))
+        #pygame.draw.rect(self.screen, (255, 100, 100), self.camera.apply(self.grid[0][-1]))
+        #pygame.draw.rect(self.screen, (255, 100, 100), self.camera.apply(self.grid[-1][0]))
+        #pygame.draw.rect(self.screen, (255, 100, 100), self.camera.apply(self.grid[-1][-1]))
         #pygame.draw.rect(self.screen, (100, 255, 100),self.camera.apply(self.grid[len(self.grid) // 2][len(self.grid[0]) // 2]))
 
-        for idx,agent in enumerate(self.agents_list):
-            pygame.draw.rect(self.screen, (100, 100, 255), self.camera.apply(self.grid[agent.y][agent.x]))
+        for idx_y,y in enumerate(self.grid):
+            for idx_x,x in enumerate(y):
+                self.screen.blit(self.grass, self.camera.apply(self.grid[idx_y][idx_x]))
 
-        for row in range(len(self.grid)):
-            for colum, voxel in enumerate(self.grid[row]):
-                pygame.draw.rect(self.screen, (255, 255, 255), self.camera.apply(voxel), 1)
+        for idx,agent in enumerate(self.agents_list):
+            #pygame.draw.rect(self.screen, (100, 100, 255), self.camera.apply(self.grid[agent.y][agent.x]))
+            self.screen.blit(agent.sprite, self.camera.apply(self.grid[agent.y][agent.x]))
+
+        #for row in range(len(self.grid)):
+        #    for colum, voxel in enumerate(self.grid[row]):
+        #        pygame.draw.rect(self.screen, (255, 255, 255), self.camera.apply(voxel), 1)
 
     def render(self):
         """

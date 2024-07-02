@@ -1,9 +1,9 @@
 
 class Entity:
-    def __init__(self, x, y):
+    def __init__(self, x, y, sprite):
         self.x = x
         self.y = y
-
+        self.sprite = sprite
     def do_action(self,action):
         if action == 0:
             self.move_up()

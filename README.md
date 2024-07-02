@@ -3,7 +3,7 @@ A natural ecosystem simulator for reinforcement learning agents.
 
 <img src="wallpaper.png" alt="drawing" width="500"/>
 
-The sprites for the agents are beasts from monster hunter and the art is performed by [Ezerart](https://www.deviantart.com/ezerart)
+The sprites for the agents are beasts from monster hunter and the art is performed by [Ezerart](https://x.com/EzerArt_)
 
 ### Installing depencies
 

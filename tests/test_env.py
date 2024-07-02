@@ -3,7 +3,7 @@ from terrarium import terrarium_v0
 from pettingzoo.test import parallel_api_test
 
 if __name__ == "__main__":
-    env = terrarium_v0.parallel_env(voxels=10,num_agents=4)
+    env = terrarium_v0.parallel_env(voxels=6,num_agents=10)
     #parallel_api_test(env, num_cycles=1_000_000)
 
 

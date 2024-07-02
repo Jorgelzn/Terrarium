@@ -1,7 +1,7 @@
 # Terrarium :leaves:
 A natural environment generator to test algorithms for intelligent agents
 
-![alt text](image.png "Terrarium")
+<img src="wallpaper.png" alt="drawing" width="500"/>
 
 ### Installing depencies
 
@@ -9,10 +9,7 @@ pip install -r requirements.txt
 
 ### User guide
 
-execute play.py
-
-Elements of the simulation can be modified using the settings dictionary,
-which is passed to the environment when it is created.
+execute test_env.py
 
 At the moment there is no traning (to be implemented), agents just move randomly.
 

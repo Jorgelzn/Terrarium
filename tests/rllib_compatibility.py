@@ -4,7 +4,7 @@ import ray
 from ray import tune
 
 def env_creator(args):
-    env = terrarium_v0.parallel_env(render_mode="human")
+    env = terrarium_v0.parallel_env(voxels=10,num_agents=4)
     #env = ss.dtype_v0(env, "float32")
     #env = ss.resize_v1(env, x_size=84, y_size=84)
     return env

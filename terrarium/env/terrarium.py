@@ -43,12 +43,12 @@ def raw_env(render_mode=None):
 
 class parallel_env(ParallelEnv):
     metadata = {
-        "render_modes": ["human"],
+        "render_modes": ["human","rgb_array"],
         "name": "terrarium",
         "render_fps": const.FPS
     }
 
-    def __init__(self, render_mode=None, num_agents=4, voxels=20):
+    def __init__(self, voxels, num_agents, render_mode="human"):
         """
         The init method takes in environment arguments and should define the following attributes:
         - possible_agents
@@ -89,8 +89,7 @@ class parallel_env(ParallelEnv):
                 sprite = pygame.transform.scale(sprite, (const.BLOCK_SIZE, const.BLOCK_SIZE))
                 self.sprites.append(sprite)
 
-        if self.render_mode == "human":
-            self.clock = pygame.time.Clock()
+        self.clock = pygame.time.Clock()
 
         # FOR RLLIB
         self.action_spaces = {agent: self.action_space(agent) for agent in self.possible_agents}
@@ -122,7 +121,7 @@ class parallel_env(ParallelEnv):
 
         terminations = {agent: False for agent in self.agents}
 
-        if self.render_mode == "human":
+        if self.render_mode == "rgb_array":
             self.render()
 
         self.time_steps += 1

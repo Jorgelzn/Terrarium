@@ -173,11 +173,11 @@ class parallel_env(ParallelEnv):
         return False
 
     def check_action(self,agent,action):
-        if action == 0 and (agent.y - 1 == 0 or self.occupied(agent.x, agent.y - 1)):
+        if action == 0 and (agent.y == 0 or self.occupied(agent.x, agent.y - 1)):
             return False
         if action == 1 and (agent.y + 1 == self.voxels or self.occupied(agent.x, agent.y + 1)):
             return False
-        if action == 2 and (agent.x - 1 == 0 or self.occupied(agent.x - 1, agent.y)):
+        if action == 2 and (agent.x == 0 or self.occupied(agent.x - 1, agent.y)):
             return False
         if action == 3 and (agent.x + 1 == self.voxels or self.occupied(agent.x + 1, agent.y)):
             return False

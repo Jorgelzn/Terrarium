@@ -74,7 +74,7 @@ class parallel_env(ParallelEnv):
             for x in range(0, self.world_size, const.BLOCK_SIZE):
                 self.grid[-1].append(pygame.Rect(x, y, const.BLOCK_SIZE, const.BLOCK_SIZE))
 
-        sprite_sheet = pygame.image.load("../terrarium/env/data/animals.png")
+        sprite_sheet = pygame.image.load("../terrarium/env/data/animals_no_border.png")
         self.grass = pygame.image.load("../terrarium/env/data/grass.jpg")
         self.grass = pygame.transform.scale(self.grass, (const.BLOCK_SIZE, const.BLOCK_SIZE))
         # Create a list of individual sprite surfaces

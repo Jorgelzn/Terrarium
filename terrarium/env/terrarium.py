@@ -2,7 +2,7 @@ import functools
 
 import gymnasium
 import pygame
-from gymnasium.spaces import Discrete, Dict, MultiBinary
+from gymnasium.spaces import Discrete,Dict
 import random
 from pettingzoo import ParallelEnv
 from pettingzoo.utils import parallel_to_aec, wrappers
@@ -68,16 +68,18 @@ class parallel_env(ParallelEnv):
         self.camera = None
         self.voxels = voxels
         self.world_size = self.voxels * const.BLOCK_SIZE
-        self.grid = []
+        self.draw_grid = []
+        self.info_grid = []
         for y in range(0, self.world_size, const.BLOCK_SIZE):
-            self.grid.append([])
+            self.draw_grid.append([])
+            self.info_grid.append([])
             for x in range(0, self.world_size, const.BLOCK_SIZE):
-                self.grid[-1].append(pygame.Rect(x, y, const.BLOCK_SIZE, const.BLOCK_SIZE))
+                self.draw_grid[-1].append(pygame.Rect(x, y, const.BLOCK_SIZE, const.BLOCK_SIZE))
+                self.info_grid[-1].append(0)
 
         sprite_sheet = pygame.image.load("../terrarium/env/data/animals_no_border.png")
         self.grass = pygame.image.load("../terrarium/env/data/grass.jpg")
         self.grass = pygame.transform.scale(self.grass, (const.BLOCK_SIZE, const.BLOCK_SIZE))
-        # Create a list of individual sprite surfaces
         self.sprites = []
         sprite_width = sprite_sheet.get_width()/4
         sprite_height = sprite_sheet.get_height()/4
@@ -89,9 +91,12 @@ class parallel_env(ParallelEnv):
                 sprite = pygame.transform.scale(sprite, (const.BLOCK_SIZE, const.BLOCK_SIZE))
                 self.sprites.append(sprite)
 
+        #FOR RENDERING, if no rendering is performed, it could be put inside if
         self.clock = pygame.time.Clock()
 
-        # FOR RLLIB
+        # FOR RLLIB (NOT SENSE)
+        self.agents = self.possible_agents[:]
+        self.spawn_agents()
         self.action_spaces = {agent: self.action_space(agent) for agent in self.possible_agents}
         self.observation_spaces = {agent: self.observation_space(agent) for agent in self.possible_agents}
 
@@ -113,7 +118,8 @@ class parallel_env(ParallelEnv):
             for idx, agent in enumerate(self.agents_list):
                 action = actions["agent_" + str(idx)]
                 if self.check_action(agent,action):
-                    agent.do_action(action)
+                    agent.do_action(action, self.info_grid)
+
 
 
         # rewards for all agents are placed in the rewards dictionary to be returned
@@ -128,8 +134,7 @@ class parallel_env(ParallelEnv):
         env_truncation = self.time_steps >= const.MAX_STEPS or self.screen is None
         truncations = {agent: env_truncation for agent in self.agents}
 
-        # current observation is just the other player's most recent action
-        observations = {agent:  (0) for idx, agent in enumerate(self.agents)}
+        observations = {agent_id: self.locate_agent(agent_id).get_observation(self.info_grid) for idx, agent_id in enumerate(self.agents)}
 
         # typically there won't be any information in the infos, but there must
         # still be an entry for each agent
@@ -150,44 +155,39 @@ class parallel_env(ParallelEnv):
         self.spawn_agents()
 
         self.time_steps = 0
-        observations = {agent: (0) for idx, agent in enumerate(self.agents)}
+        observations = {agent_id: self.locate_agent(agent_id).get_observation(self.info_grid) for idx, agent_id in enumerate(self.agents)}
         infos = {agent: {} for agent in self.agents}
 
         return observations, infos
 
     def spawn_agents(self):
         self.agents_list = []
-        for _ in range(len(self.agents)):
+        for idx in range(len(self.agents)):
             x = random.randrange(0, self.voxels)
             y = random.randrange(0, self.voxels)
-            while self.occupied(x, y):
+            while self.info_grid[y][x] != 0:
                 x = random.randrange(0, self.voxels)
                 y = random.randrange(0, self.voxels)
 
-            self.agents_list.append(Entity(x, y, self.sprites[random.randrange(16)]))
-
-    def occupied(self, x, y):
-        for agent in self.agents_list:
-            if x == agent.x and y == agent.y:
-                return True
-        return False
+            self.agents_list.append(Entity("agent_"+str(idx),x, y, self.sprites[random.randrange(16)]))
+            self.info_grid[y][x] = 1
 
     def check_action(self,agent,action):
-        if action == 0 and (agent.y == 0 or self.occupied(agent.x, agent.y - 1)):
+        if action == 0 and (agent.y == 0 or self.info_grid[agent.y-1][agent.x] == 1):
             return False
-        if action == 1 and (agent.y + 1 == self.voxels or self.occupied(agent.x, agent.y + 1)):
+        if action == 1 and (agent.y + 1 == self.voxels or self.info_grid[agent.y+1][agent.x] == 1):
             return False
-        if action == 2 and (agent.x == 0 or self.occupied(agent.x - 1, agent.y)):
+        if action == 2 and (agent.x == 0 or self.info_grid[agent.y][agent.x-1] == 1):
             return False
-        if action == 3 and (agent.x + 1 == self.voxels or self.occupied(agent.x + 1, agent.y)):
+        if action == 3 and (agent.x + 1 == self.voxels or self.info_grid[agent.y][agent.x+1] == 1):
             return False
 
         return True
 
     @functools.lru_cache(maxsize=None)
-    def observation_space(self, agent):
+    def observation_space(self, agent_id):
         # gymnasium spaces are defined and documented here: https://gymnasium.farama.org/api/spaces/
-        return Discrete(4)
+        return  self.locate_agent(agent_id).observation_space
 
 
     @functools.lru_cache(maxsize=None)
@@ -197,23 +197,16 @@ class parallel_env(ParallelEnv):
     def draw(self):
         self.screen.fill((100, 100, 100))
 
-        #self.screen.blit(self.sprites[random.randrange(16)],self.camera.apply(self.grid[0][-1]))
-        #pygame.draw.rect(self.screen, (255, 100, 100), self.camera.apply(self.grid[0][0]))
-        #pygame.draw.rect(self.screen, (255, 100, 100), self.camera.apply(self.grid[0][-1]))
-        #pygame.draw.rect(self.screen, (255, 100, 100), self.camera.apply(self.grid[-1][0]))
-        #pygame.draw.rect(self.screen, (255, 100, 100), self.camera.apply(self.grid[-1][-1]))
-        #pygame.draw.rect(self.screen, (100, 255, 100),self.camera.apply(self.grid[len(self.grid) // 2][len(self.grid[0]) // 2]))
-
-        for idx_y,y in enumerate(self.grid):
+        for idx_y,y in enumerate(self.draw_grid):
             for idx_x,x in enumerate(y):
-                self.screen.blit(self.grass, self.camera.apply(self.grid[idx_y][idx_x]))
+                self.screen.blit(self.grass, self.camera.apply(self.draw_grid[idx_y][idx_x]))
 
         for idx,agent in enumerate(self.agents_list):
-            #pygame.draw.rect(self.screen, (100, 100, 255), self.camera.apply(self.grid[agent.y][agent.x]))
-            self.screen.blit(agent.sprite, self.camera.apply(self.grid[agent.y][agent.x]))
+            self.screen.blit(agent.sprite, self.camera.apply(self.draw_grid[agent.y][agent.x]))
 
-        #for row in range(len(self.grid)):
-        #    for colum, voxel in enumerate(self.grid[row]):
+        ## DRAW GRID
+        #for row in range(len(self.draw_grid)):
+        #    for colum, voxel in enumerate(self.draw_grid[row]):
         #        pygame.draw.rect(self.screen, (255, 255, 255), self.camera.apply(voxel), 1)
 
     def render(self):
@@ -275,3 +268,8 @@ class parallel_env(ParallelEnv):
         if self.screen is not None:
             pygame.quit()
             self.screen = None
+
+    def locate_agent(self,agent_id):
+        for agent in self.agents_list:
+            if agent.id == agent_id:
+                return agent

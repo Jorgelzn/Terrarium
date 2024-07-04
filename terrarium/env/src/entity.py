@@ -38,12 +38,17 @@ class Entity:
         obs = np.zeros((2*self.perception_range+1,2*self.perception_range+1))
         center_y = len(obs) % 2
         center_x = len(obs[0]) % 2
-        y_minus = self.y-self.perception_range if self.y-self.perception_range >= 0 else None
-        y_plus = self.y+self.perception_range if self.y+self.perception_range < len(grid) else None
-        x_minus = self.x - self.perception_range if self.x - self.perception_range >= 0 else None
-        x_plus = self.x + self.perception_range if self.x + self.perception_range < len(grid[0]) else None
-        for obs_y in range(len(obs)):
-            for obs_x in range(len(obs[obs_y])):
-                obs[obs_y][obs_x] = grid[obs_y][obs_x]
+        for idx_line,obs_linne in enumerate(obs):
+            for idx_col,obs_col in enumerate(obs_linne):
+                y_dist = idx_line - center_y
+                x_dist = idx_col - center_x
+
+                pos_y = self.y + y_dist
+                pos_x = self.x + x_dist
+
+                if pos_x<0 or pos_y<0 or pos_x >= len(grid) or pos_y >= len(grid[0]):
+                    obs[idx_line][idx_col] = -1
+                else:
+                    obs[idx_line][idx_col] = grid[pos_y][pos_x]
 
         return obs

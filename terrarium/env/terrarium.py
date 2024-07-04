@@ -151,9 +151,10 @@ class parallel_env(ParallelEnv):
         environment so that render(), and step() can be called without issues.
         Returns the observations for each agent
         """
+        print(self.info_grid)
         self.agents = self.possible_agents[:]
         self.spawn_agents()
-
+        print(self.info_grid)
         self.time_steps = 0
         observations = {agent_id: self.locate_agent(agent_id).get_observation(self.info_grid) for idx, agent_id in enumerate(self.agents)}
         infos = {agent: {} for agent in self.agents}

@@ -1,5 +1,5 @@
 import numpy as np
-from gymnasium.spaces import MultiDiscrete
+from gymnasium.spaces import MultiDiscrete,Box
 
 class Entity:
     def __init__(self, agent_id, x, y, sprite, perception_range=1):
@@ -8,8 +8,8 @@ class Entity:
         self.id = agent_id
         self.sprite = sprite
         self.perception_range = perception_range
-        self.observation_space = MultiDiscrete(np.ones(shape=(2*self.perception_range+1,2*self.perception_range+1,2),dtype=np.int8))
-        self.obs_ids = np.zeros((2*self.perception_range+1,2*self.perception_range+1,2),dtype=np.int8)
+        self.observation_space = Box(low=-1, high=1, shape=(2*self.perception_range+1,2*self.perception_range+1,2), dtype=float)
+        self.obs_ids = np.zeros((2*self.perception_range+1,2*self.perception_range+1,2),dtype=int)
     def do_action(self,action,agents):
         agents[self.y][self.x] = 0
         if action == 0:

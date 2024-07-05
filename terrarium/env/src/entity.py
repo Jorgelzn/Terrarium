@@ -8,7 +8,8 @@ class Entity:
         self.id = agent_id
         self.sprite = sprite
         self.perception_range = perception_range
-        self.observation_space = MultiDiscrete(np.full(shape=(2+self.perception_range,2+self.perception_range),fill_value=2))
+        self.observation_space = MultiDiscrete(np.full(shape=(2*self.perception_range+1,2*self.perception_range+1),fill_value=2))
+        self.obs_ids = np.zeros((2*self.perception_range+1,2*self.perception_range+1),dtype=tuple)
     def do_action(self,action,grid):
         grid[self.y][self.x] = 0
         if action == 0:
@@ -48,7 +49,9 @@ class Entity:
 
                 if pos_x<0 or pos_y<0 or pos_y >= len(grid) or pos_x >= len(grid[0]):
                     obs[idx_line][idx_col] = -1
+                    self.obs_ids[idx_line][idx_col] = (-1,-1)
                 else:
                     obs[idx_line][idx_col] = grid[pos_y][pos_x]
+                    self.obs_ids[idx_line][idx_col] = (pos_y,pos_x)
 
         return obs

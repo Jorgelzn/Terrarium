@@ -48,7 +48,7 @@ class parallel_env(ParallelEnv):
         "render_fps": const.FPS
     }
 
-    def __init__(self, voxels, num_agents, render_mode="human"):
+    def __init__(self, voxels, num_agents, render_mode="human",render_obs=False):
         """
         The init method takes in environment arguments and should define the following attributes:
         - possible_agents
@@ -93,7 +93,7 @@ class parallel_env(ParallelEnv):
         #FOR RENDERING, if no rendering is performed, it could be put inside if
         pygame.init()
         self.clock = pygame.time.Clock()
-
+        self.render_obs = render_obs
         if self.render_mode == "human":
             self.screen = pygame.display.set_mode(
                 [const.SCREEN_WIDTH, const.SCREEN_HEIGHT]
@@ -213,6 +213,14 @@ class parallel_env(ParallelEnv):
 
         for idx,agent in enumerate(self.agents_list):
             self.screen.blit(agent.sprite, self.camera.apply(self.draw_grid[agent.y][agent.x]))
+            if self.render_obs:
+                for ob_id_y in agent.obs_ids:
+                    for ob_idx in ob_id_y:
+                        if ob_idx[0]!=-1 and (ob_idx[0]!=agent.y or ob_idx[1]!=agent.x):
+                            rect_surface = pygame.Surface((const.BLOCK_SIZE, const.BLOCK_SIZE), pygame.SRCALPHA, 32)
+                            rect_surface.set_alpha(128)
+                            rect_surface.fill((100, 200, 255))
+                            self.screen.blit(rect_surface, self.camera.apply(self.draw_grid[ob_idx[0]][ob_idx[1]]))
 
         ## DRAW GRID
         #for row in range(len(self.draw_grid)):
@@ -230,20 +238,21 @@ class parallel_env(ParallelEnv):
             )
             return
 
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                self.close()
+        if self.render_mode == "human":
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    self.close()
 
-            if self.world_size > const.SCREEN_WIDTH or self.world_size > const.SCREEN_HEIGHT:
-                if event.type == pygame.MOUSEBUTTONDOWN:
-                    if event.button == 1:  # Left mouse button
-                        self.camera.start_drag(event.pos)
-                elif event.type == pygame.MOUSEBUTTONUP:
-                    if event.button == 1:  # Left mouse button
-                        self.camera.stop_drag()
-                elif event.type == pygame.MOUSEMOTION:
-                    if self.camera.dragging:
-                        self.camera.update_drag(event.pos)
+                if self.world_size > const.SCREEN_WIDTH or self.world_size > const.SCREEN_HEIGHT:
+                    if event.type == pygame.MOUSEBUTTONDOWN:
+                        if event.button == 1:  # Left mouse button
+                            self.camera.start_drag(event.pos)
+                    elif event.type == pygame.MOUSEBUTTONUP:
+                        if event.button == 1:  # Left mouse button
+                            self.camera.stop_drag()
+                    elif event.type == pygame.MOUSEMOTION:
+                        if self.camera.dragging:
+                            self.camera.update_drag(event.pos)
 
         if self.screen is not None:
             self.draw()

@@ -1,7 +1,7 @@
 # Terrarium :leaves:
 A natural ecosystem simulator for reinforcement learning agents.
 
-<img src="wallpaper.png" alt="drawing" width="500"/>
+<img src="wallpaper.png" alt="drawing" width="800"/>
 
 The sprites for the agents are non player characters from the video game series "monster hunter".
 

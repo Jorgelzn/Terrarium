@@ -151,6 +151,7 @@ class parallel_env(ParallelEnv):
 
         if env_truncation:
             self.agents = []
+            self.close()
 
         return observations, rewards, terminations, truncations, infos
 

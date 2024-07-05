@@ -10,8 +10,8 @@ class Entity:
         self.perception_range = perception_range
         self.observation_space = MultiDiscrete(np.ones(shape=(2*self.perception_range+1,2*self.perception_range+1,2),dtype=np.int8))
         self.obs_ids = np.zeros((2*self.perception_range+1,2*self.perception_range+1,2),dtype=np.int8)
-    def do_action(self,action,grid):
-        grid[self.y][self.x] = 0
+    def do_action(self,action,agents):
+        agents[self.y][self.x] = 0
         if action == 0:
             self.move_up()
         elif action == 1:
@@ -20,7 +20,7 @@ class Entity:
             self.move_left()
         elif action == 3:
             self.move_right()
-        grid[self.y][self.x] = 2
+        agents[self.y][self.x] = 1
 
 
     def move_up(self):

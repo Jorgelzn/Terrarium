@@ -94,11 +94,11 @@ class parallel_env(ParallelEnv):
         pygame.init()
         self.clock = pygame.time.Clock()
         self.render_obs = render_obs
+        self.camera = Camera(self.world_size)
         if self.render_mode == "human":
             self.screen = pygame.display.set_mode(
                 [const.SCREEN_WIDTH, const.SCREEN_HEIGHT]
             )
-            self.camera = Camera(self.world_size)
             pygame.display.set_caption("Terrarium")
         elif self.render_mode == "rgb_array":
             self.screen = pygame.Surface((const.SCREEN_WIDTH, const.SCREEN_HEIGHT))

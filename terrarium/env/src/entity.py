@@ -8,7 +8,8 @@ class Entity:
         self.id = agent_id
         self.sprite = sprite
         self.perception_range = perception_range
-        self.observation_space = Box(low=-1, high=1, shape=(2*self.perception_range+1,2*self.perception_range+1,2), dtype=int)
+        #self.observation_space = Box(low=-1, high=1, shape=(2*self.perception_range+1,2*self.perception_range+1,2), dtype=int)
+        self.observation_space = Box(low=-1, high=1, shape=((2 * self.perception_range + 1)**2*2,), dtype=int)
         self.obs_ids = np.zeros((2*self.perception_range+1,2*self.perception_range+1,2),dtype=int)
 
     def do_action(self,action,agents):
@@ -38,11 +39,11 @@ class Entity:
 
     def get_observation(self,terrain):
         terrain_len = len(terrain.terrain_type)
-        obs = np.zeros((2*self.perception_range+1,2*self.perception_range+1,2))
-        center_y = len(obs) % 2
-        center_x = len(obs[0]) % 2
-        for idx_line,obs_line in enumerate(obs):
-            for idx_col,obs_col in enumerate(obs_line):
+        obs = []#np.zeros(shape=(2*self.perception_range+1)**2*4)
+        center_y = len(self.obs_ids) % 2
+        center_x = len(self.obs_ids[0]) % 2
+        for idx_line,obs_line in enumerate(self.obs_ids):
+            for idx_col,obs_col in enumerate(self.obs_ids):
                 y_dist = idx_line - center_y
                 x_dist = idx_col - center_x
 
@@ -50,12 +51,12 @@ class Entity:
                 pos_x = self.x + x_dist - self.perception_range + 1
 
                 if pos_x<0 or pos_y<0 or pos_y >= terrain_len or pos_x >= terrain_len:
-                    obs[idx_line][idx_col][0] = -1
-                    obs[idx_line][idx_col][1] = 0
+                    obs.append(-1)
+                    obs.append(0)
                     self.obs_ids[idx_line][idx_col] = [-1,-1]
                 else:
-                    obs[idx_line][idx_col][0] = terrain.terrain_type[pos_y][pos_x]
-                    obs[idx_line][idx_col][1] = terrain.agents[pos_y][pos_x]
+                    obs.append(terrain.terrain_type[pos_y][pos_x])
+                    obs.append(terrain.agents[pos_y][pos_x])
                     self.obs_ids[idx_line][idx_col] = [pos_y,pos_x]
 
 

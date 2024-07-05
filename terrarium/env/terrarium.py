@@ -76,7 +76,6 @@ class parallel_env(ParallelEnv):
             for x in range(0, self.world_size, const.BLOCK_SIZE):
                 self.draw_grid[-1].append(pygame.Rect(x, y, const.BLOCK_SIZE, const.BLOCK_SIZE))
                 self.info_grid[-1].append(0)
-
         sprite_sheet = pygame.image.load("../terrarium/env/data/animals_no_border.png")
         self.grass = pygame.image.load("../terrarium/env/data/grass.jpg")
         self.grass = pygame.transform.scale(self.grass, (const.BLOCK_SIZE, const.BLOCK_SIZE))
@@ -92,13 +91,23 @@ class parallel_env(ParallelEnv):
                 self.sprites.append(sprite)
 
         #FOR RENDERING, if no rendering is performed, it could be put inside if
+        pygame.init()
         self.clock = pygame.time.Clock()
 
+        if self.render_mode == "human":
+            self.screen = pygame.display.set_mode(
+                [const.SCREEN_WIDTH, const.SCREEN_HEIGHT]
+            )
+            self.camera = Camera(self.world_size)
+            pygame.display.set_caption("Terrarium")
+        elif self.render_mode == "rgb_array":
+            self.screen = pygame.Surface((const.SCREEN_WIDTH, const.SCREEN_HEIGHT))
+
         # FOR RLLIB (NOT SENSE)
-        self.agents = self.possible_agents[:]
-        self.spawn_agents()
-        self.action_spaces = {agent: self.action_space(agent) for agent in self.possible_agents}
-        self.observation_spaces = {agent: self.observation_space(agent) for agent in self.possible_agents}
+        #self.agents = self.possible_agents[:]
+        #self.spawn_agents()
+        #self.action_spaces = {agent: self.action_space(agent) for agent in self.possible_agents}
+        #self.observation_spaces = {agent: self.observation_space(agent) for agent in self.possible_agents}
 
     def step(self, actions):
         """
@@ -151,10 +160,10 @@ class parallel_env(ParallelEnv):
         environment so that render(), and step() can be called without issues.
         Returns the observations for each agent
         """
-        print(self.info_grid)
+
         self.agents = self.possible_agents[:]
         self.spawn_agents()
-        print(self.info_grid)
+
         self.time_steps = 0
         observations = {agent_id: self.locate_agent(agent_id).get_observation(self.info_grid) for idx, agent_id in enumerate(self.agents)}
         infos = {agent: {} for agent in self.agents}
@@ -220,18 +229,6 @@ class parallel_env(ParallelEnv):
                 "You are calling render method without specifying any render mode."
             )
             return
-
-        if self.screen is None:
-            pygame.init()
-
-            if self.render_mode == "human":
-                self.screen = pygame.display.set_mode(
-                    [const.SCREEN_WIDTH, const.SCREEN_HEIGHT]
-                )
-                self.camera = Camera(self.world_size)
-                pygame.display.set_caption("Terrarium")
-            elif self.render_mode == "rgb_array":
-                self.screen = pygame.Surface((const.SCREEN_WIDTH, const.SCREEN_HEIGHT))
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:

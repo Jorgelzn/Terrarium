@@ -225,7 +225,7 @@ class parallel_env(ParallelEnv):
                         if ob_idx[0]!=-1 and (ob_idx[0]!=agent.y or ob_idx[1]!=agent.x):
                             rect_surface = pygame.Surface((const.BLOCK_SIZE, const.BLOCK_SIZE), pygame.SRCALPHA, 32)
                             rect_surface.set_alpha(128)
-                            rect_surface.fill((255,255,0))
+                            rect_surface.fill((255,0,100))
                             self.screen.blit(rect_surface, self.camera.apply(self.terrain.draw_grid[ob_idx[0]][ob_idx[1]]))
 
         # DRAW AGENTS

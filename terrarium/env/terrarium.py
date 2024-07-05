@@ -9,8 +9,9 @@ from pettingzoo.utils import parallel_to_aec, wrappers
 from terrarium.env.src import constants as const
 from terrarium.env.src.Camera import Camera
 from terrarium.env.src.entity import Entity
+from terrarium.env.src.terrain import Terrain
 import numpy as np
-
+import noise
 
 def env(render_mode=None):
     """
@@ -68,17 +69,16 @@ class parallel_env(ParallelEnv):
         self.camera = None
         self.voxels = voxels
         self.world_size = self.voxels * const.BLOCK_SIZE
-        self.draw_grid = []
-        self.info_grid = []
-        for y in range(0, self.world_size, const.BLOCK_SIZE):
-            self.draw_grid.append([])
-            self.info_grid.append([])
-            for x in range(0, self.world_size, const.BLOCK_SIZE):
-                self.draw_grid[-1].append(pygame.Rect(x, y, const.BLOCK_SIZE, const.BLOCK_SIZE))
-                self.info_grid[-1].append(0)
+
+        ## TERRAIN ##
+        self.terrain = Terrain(self.world_size,const.BLOCK_SIZE)
+
+        ## SPRITES PROCESSING
         sprite_sheet = pygame.image.load("../terrarium/env/data/animals_no_border.png")
         self.grass = pygame.image.load("../terrarium/env/data/grass.jpg")
         self.grass = pygame.transform.scale(self.grass, (const.BLOCK_SIZE, const.BLOCK_SIZE))
+        self.water = pygame.image.load("../terrarium/env/data/water.jpg")
+        self.water = pygame.transform.scale(self.water, (const.BLOCK_SIZE, const.BLOCK_SIZE))
         self.sprites = []
         sprite_width = sprite_sheet.get_width()/4
         sprite_height = sprite_sheet.get_height()/4
@@ -90,7 +90,7 @@ class parallel_env(ParallelEnv):
                 sprite = pygame.transform.scale(sprite, (const.BLOCK_SIZE, const.BLOCK_SIZE))
                 self.sprites.append(sprite)
 
-        #FOR RENDERING, if no rendering is performed, it could be put inside if
+        #RENDERING, revisar
         pygame.init()
         self.clock = pygame.time.Clock()
         self.render_obs = render_obs
@@ -127,7 +127,7 @@ class parallel_env(ParallelEnv):
             for idx, agent in enumerate(self.agents_list):
                 action = actions["agent_" + str(idx)]
                 if self.check_action(agent,action):
-                    agent.do_action(action, self.info_grid)
+                    agent.do_action(action, self.terrain.agents)
 
 
 
@@ -143,7 +143,7 @@ class parallel_env(ParallelEnv):
         env_truncation = self.time_steps >= const.MAX_STEPS or self.screen is None
         truncations = {agent: env_truncation for agent in self.agents}
 
-        observations = {agent_id: self.locate_agent(agent_id).get_observation(self.info_grid) for idx, agent_id in enumerate(self.agents)}
+        observations = {agent_id: self.locate_agent(agent_id).get_observation(self.terrain) for idx, agent_id in enumerate(self.agents)}
 
         # typically there won't be any information in the infos, but there must
         # still be an entry for each agent
@@ -165,7 +165,7 @@ class parallel_env(ParallelEnv):
         self.spawn_agents()
 
         self.time_steps = 0
-        observations = {agent_id: self.locate_agent(agent_id).get_observation(self.info_grid) for idx, agent_id in enumerate(self.agents)}
+        observations = {agent_id: self.locate_agent(agent_id).get_observation(self.terrain) for idx, agent_id in enumerate(self.agents)}
         infos = {agent: {} for agent in self.agents}
 
         return observations, infos
@@ -175,21 +175,21 @@ class parallel_env(ParallelEnv):
         for idx in range(len(self.agents)):
             x = random.randrange(0, self.voxels)
             y = random.randrange(0, self.voxels)
-            while self.info_grid[y][x] != 0:
+            while self.terrain.agents[y][x] != 0:
                 x = random.randrange(0, self.voxels)
                 y = random.randrange(0, self.voxels)
 
             self.agents_list.append(Entity("agent_"+str(idx),x, y, self.sprites[random.randrange(16)]))
-            self.info_grid[y][x] = 1
+            self.terrain.agents[y][x] = 1
 
     def check_action(self,agent,action):
-        if action == 0 and (agent.y == 0 or self.info_grid[agent.y-1][agent.x] == 1):
+        if action == 0 and (agent.y == 0 or self.terrain.agents[agent.y-1][agent.x] == 1):
             return False
-        if action == 1 and (agent.y + 1 == self.voxels or self.info_grid[agent.y+1][agent.x] == 1):
+        if action == 1 and (agent.y + 1 == self.voxels or self.terrain.agents[agent.y+1][agent.x] == 1):
             return False
-        if action == 2 and (agent.x == 0 or self.info_grid[agent.y][agent.x-1] == 1):
+        if action == 2 and (agent.x == 0 or self.terrain.agents[agent.y][agent.x-1] == 1):
             return False
-        if action == 3 and (agent.x + 1 == self.voxels or self.info_grid[agent.y][agent.x+1] == 1):
+        if action == 3 and (agent.x + 1 == self.voxels or self.terrain.agents[agent.y][agent.x+1] == 1):
             return False
 
         return True
@@ -207,22 +207,32 @@ class parallel_env(ParallelEnv):
     def draw(self):
         self.screen.fill((100, 100, 100))
 
-        for idx_y,y in enumerate(self.draw_grid):
+        # DRAW TERRAIN
+        for idx_y,y in enumerate(self.terrain.terrain_type):
             for idx_x,x in enumerate(y):
-                self.screen.blit(self.grass, self.camera.apply(self.draw_grid[idx_y][idx_x]))
+                terrain_type = None
+                if x == 0:
+                    terrain_type = self.grass
+                elif x == 1:
+                    terrain_type = self.water
+                self.screen.blit(terrain_type, self.camera.apply(self.terrain.draw_grid[idx_y][idx_x]))
 
+        # DRAW OBSERVATION SPACES
         for idx,agent in enumerate(self.agents_list):
-            self.screen.blit(agent.sprite, self.camera.apply(self.draw_grid[agent.y][agent.x]))
             if self.render_obs:
                 for ob_id_y in agent.obs_ids:
                     for ob_idx in ob_id_y:
                         if ob_idx[0]!=-1 and (ob_idx[0]!=agent.y or ob_idx[1]!=agent.x):
                             rect_surface = pygame.Surface((const.BLOCK_SIZE, const.BLOCK_SIZE), pygame.SRCALPHA, 32)
                             rect_surface.set_alpha(128)
-                            rect_surface.fill((100, 200, 255))
-                            self.screen.blit(rect_surface, self.camera.apply(self.draw_grid[ob_idx[0]][ob_idx[1]]))
+                            rect_surface.fill((255,255,0))
+                            self.screen.blit(rect_surface, self.camera.apply(self.terrain.draw_grid[ob_idx[0]][ob_idx[1]]))
 
-        ## DRAW GRID
+        # DRAW AGENTS
+        for idx,agent in enumerate(self.agents_list):
+            self.screen.blit(agent.sprite, self.camera.apply(self.terrain.draw_grid[agent.y][agent.x]))
+
+        # DRAW GRID
         #for row in range(len(self.draw_grid)):
         #    for colum, voxel in enumerate(self.draw_grid[row]):
         #        pygame.draw.rect(self.screen, (255, 255, 255), self.camera.apply(voxel), 1)

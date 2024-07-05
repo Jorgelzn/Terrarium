@@ -18,7 +18,6 @@ if __name__ == "__main__":
         if timer < 0:
             actions = {agent: env.action_space(agent).sample() for agent in env.agents}
             observations, rewards, terminations, truncations, infos = env.step(actions)
-            print(observations)
             timer = limit
 
     env.close()

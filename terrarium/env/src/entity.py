@@ -2,7 +2,7 @@ import numpy as np
 from gymnasium.spaces import MultiDiscrete
 
 class Entity:
-    def __init__(self, agent_id, x, y, sprite, perception_range=2):
+    def __init__(self, agent_id, x, y, sprite, perception_range=3):
         self.x = x
         self.y = y
         self.id = agent_id
@@ -43,8 +43,8 @@ class Entity:
                 y_dist = idx_line - center_y
                 x_dist = idx_col - center_x
 
-                pos_y = self.y + y_dist -1
-                pos_x = self.x + x_dist -1
+                pos_y = self.y + y_dist - self.perception_range + 1
+                pos_x = self.x + x_dist - self.perception_range + 1
 
                 if pos_x<0 or pos_y<0 or pos_y >= len(grid) or pos_x >= len(grid[0]):
                     obs[idx_line][idx_col] = -1

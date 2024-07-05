@@ -8,8 +8,9 @@ class Entity:
         self.id = agent_id
         self.sprite = sprite
         self.perception_range = perception_range
-        self.observation_space = Box(low=-1, high=1, shape=(2*self.perception_range+1,2*self.perception_range+1,2), dtype=float)
+        self.observation_space = Box(low=-1, high=1, shape=(2*self.perception_range+1,2*self.perception_range+1,2), dtype=int)
         self.obs_ids = np.zeros((2*self.perception_range+1,2*self.perception_range+1,2),dtype=int)
+
     def do_action(self,action,agents):
         agents[self.y][self.x] = 0
         if action == 0:

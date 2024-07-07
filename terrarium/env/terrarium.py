@@ -126,8 +126,7 @@ class parallel_env(ParallelEnv):
         else:
             for idx, agent in enumerate(self.agents_list):
                 action = actions["agent_" + str(idx)]
-                if self.check_action(agent,action):
-                    agent.do_action(action, self.terrain.agents)
+                agent.do_action(action, self.terrain.agents)
 
 
 
@@ -182,18 +181,6 @@ class parallel_env(ParallelEnv):
 
             self.agents_list.append(Entity("agent_"+str(idx),x, y, self.sprites[random.randrange(16)]))
             self.terrain.agents[y][x] = 1
-
-    def check_action(self,agent,action):
-        if action == 0 and (agent.y == 0 or self.terrain.agents[agent.y-1][agent.x] == 1):
-            return False
-        if action == 1 and (agent.y + 1 == self.voxels or self.terrain.agents[agent.y+1][agent.x] == 1):
-            return False
-        if action == 2 and (agent.x == 0 or self.terrain.agents[agent.y][agent.x-1] == 1):
-            return False
-        if action == 3 and (agent.x + 1 == self.voxels or self.terrain.agents[agent.y][agent.x+1] == 1):
-            return False
-
-        return True
 
     @functools.lru_cache(maxsize=None)
     def observation_space(self, agent_id):

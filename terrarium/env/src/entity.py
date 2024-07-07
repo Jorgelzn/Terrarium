@@ -12,17 +12,31 @@ class Entity:
         self.observation_space = Box(low=-1, high=1, shape=((2 * self.perception_range + 1)**2*2,), dtype=int)
         self.obs_ids = np.zeros((2*self.perception_range+1,2*self.perception_range+1,2),dtype=int)
 
+
+    def check_action(self,action,agents):
+        if action == 0 and (self.y == 0 or agents[self.y-1][self.x] == 1):
+            return False
+        if action == 1 and (self.y + 1 == len(agents) or agents[self.y+1][self.x] == 1):
+            return False
+        if action == 2 and (self.x == 0 or agents[self.y][self.x-1] == 1):
+            return False
+        if action == 3 and (self.x + 1 == len(agents) or agents[self.y][self.x+1] == 1):
+            return False
+
+        return True
+
     def do_action(self,action,agents):
-        agents[self.y][self.x] = 0
-        if action == 0:
-            self.move_up()
-        elif action == 1:
-            self.move_down()
-        elif action == 2:
-            self.move_left()
-        elif action == 3:
-            self.move_right()
-        agents[self.y][self.x] = 1
+        if self.check_action(action,agents):
+            agents[self.y][self.x] = 0
+            if action == 0:
+                self.move_up()
+            elif action == 1:
+                self.move_down()
+            elif action == 2:
+                self.move_left()
+            elif action == 3:
+                self.move_right()
+            agents[self.y][self.x] = 1
 
 
     def move_up(self):

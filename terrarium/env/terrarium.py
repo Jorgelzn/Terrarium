@@ -73,22 +73,13 @@ class parallel_env(ParallelEnv):
         ## TERRAIN ##
         self.terrain = Terrain(self.world_size,const.BLOCK_SIZE)
 
-        ## SPRITES PROCESSING
-        sprite_sheet = pygame.image.load("../terrarium/env/data/animals_no_border.png")
-        self.grass = pygame.image.load("../terrarium/env/data/grass.jpg")
-        self.grass = pygame.transform.scale(self.grass, (const.BLOCK_SIZE, const.BLOCK_SIZE))
-        self.water = pygame.image.load("../terrarium/env/data/water.jpg")
-        self.water = pygame.transform.scale(self.water, (const.BLOCK_SIZE, const.BLOCK_SIZE))
-        self.sprites = []
-        sprite_width = sprite_sheet.get_width()/4
-        sprite_height = sprite_sheet.get_height()/4
-        for row in range(4):
-            for col in range(4):
-                x = col * sprite_width
-                y = row * sprite_height
-                sprite = sprite_sheet.subsurface(pygame.Rect(x, y, sprite_width, sprite_height))
-                sprite = pygame.transform.scale(sprite, (const.BLOCK_SIZE, const.BLOCK_SIZE))
-                self.sprites.append(sprite)
+        ## SPRITES
+
+        self.ground_agent_sprite = pygame.image.load("../terrarium/env/data/treecko.png")
+        self.ground_agent_sprite = pygame.transform.scale(self.ground_agent_sprite, (const.BLOCK_SIZE, const.BLOCK_SIZE))
+
+        self.water_agent_sprite = pygame.image.load("../terrarium/env/data/mudkip.png")
+        self.water_agent_sprite = pygame.transform.scale(self.water_agent_sprite,(const.BLOCK_SIZE, const.BLOCK_SIZE))
 
         #RENDERING, revisar
         pygame.init()
@@ -103,11 +94,8 @@ class parallel_env(ParallelEnv):
         elif self.render_mode == "rgb_array":
             self.screen = pygame.Surface((const.SCREEN_WIDTH, const.SCREEN_HEIGHT))
 
-        # FOR RLLIB (NOT SENSE)
-        #self.agents = self.possible_agents[:]
-        #self.spawn_agents()
-        #self.action_spaces = {agent: self.action_space(agent) for agent in self.possible_agents}
-        #self.observation_spaces = {agent: self.observation_space(agent) for agent in self.possible_agents}
+
+
 
     def step(self, actions):
         """
@@ -179,7 +167,12 @@ class parallel_env(ParallelEnv):
                 x = random.randrange(0, self.voxels)
                 y = random.randrange(0, self.voxels)
 
-            self.agents_list.append(Entity("agent_"+str(idx),x, y, self.sprites[random.randrange(16)]))
+            if random.random() < 0.5:
+                sprite = self.ground_agent_sprite
+            else:
+                sprite = self.water_agent_sprite
+
+            self.agents_list.append(Entity("agent_"+str(idx),x, y, sprite))
             self.terrain.agents[y][x] = 1
 
     @functools.lru_cache(maxsize=None)
@@ -198,12 +191,27 @@ class parallel_env(ParallelEnv):
         # DRAW TERRAIN
         for idx_y,y in enumerate(self.terrain.terrain_type):
             for idx_x,x in enumerate(y):
-                terrain_type = None
+                for texture in self.terrain.terrain_textures[idx_y][idx_x]:
+                    self.screen.blit(texture, self.camera.apply(self.terrain.draw_grid[idx_y][idx_x]))
                 if x == 0:
-                    terrain_type = self.grass
+                    if idx_y < len(self.terrain.terrain_type)-1 and self.terrain.terrain_type[idx_y+1][idx_x] == 1:
+                        self.screen.blit(self.terrain.border_down, self.camera.apply(self.terrain.draw_grid[idx_y][idx_x]))
+                    if idx_y > 0 and self.terrain.terrain_type[idx_y-1][idx_x] == 1:
+                        self.screen.blit(self.terrain.border_up, self.camera.apply(self.terrain.draw_grid[idx_y][idx_x]))
+                    if idx_x < len(y)-1 and self.terrain.terrain_type[idx_y][idx_x+1] == 1:
+                        self.screen.blit(self.terrain.border_right, self.camera.apply(self.terrain.draw_grid[idx_y][idx_x]))
+                    if idx_x > 0 and self.terrain.terrain_type[idx_y][idx_x-1] == 1:
+                        self.screen.blit(self.terrain.border_left, self.camera.apply(self.terrain.draw_grid[idx_y][idx_x]))
                 elif x == 1:
-                    terrain_type = self.water
-                self.screen.blit(terrain_type, self.camera.apply(self.terrain.draw_grid[idx_y][idx_x]))
+                    self.terrain.terrain_textures[idx_y][idx_x][0] = self.terrain.water[self.terrain.water_anim]
+
+        self.terrain.water_anim_timer += self.clock.get_time()
+        if self.terrain.water_anim_timer >= 90:
+            self.terrain.water_anim_timer = 0
+            if self.terrain.water_anim == 7:
+                self.terrain.water_anim = 0
+            else:
+                self.terrain.water_anim += 1
 
         # DRAW OBSERVATION SPACES
         for idx,agent in enumerate(self.agents_list):

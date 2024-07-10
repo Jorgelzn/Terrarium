@@ -3,10 +3,10 @@ from terrarium import terrarium_v0
 from pettingzoo.test import parallel_api_test
 
 if __name__ == "__main__":
-    env = terrarium_v0.parallel_env(voxels=18,num_agents=10,render_obs=True)
+    env = terrarium_v0.parallel_env(voxels=24,num_agents=10,render_obs=True)
     #parallel_api_test(env, num_cycles=1_000_000)
 
-    limit = 100
+    limit = 1000
     timer = limit
 
     observations, infos = env.reset()

@@ -47,8 +47,22 @@ class Terrain:
                 if terrain_value > 0:
                     self.terrain_type[-1].append(0)
                     self.terrain_textures[-1][-1].append(self.grass[random.randrange(len(self.grass))])
-                    if random.random() > 0.98:
-                        self.terrain_textures[-1][-1].append(self.flower)
                 else:
                     self.terrain_type[-1].append(1)
                     self.terrain_textures[-1][-1].append(self.water[self.water_anim])
+
+        #ADD DECORAION SPRITES TO LAND
+        for idx_y,y in enumerate(self.terrain_type):
+            for idx_x,x in enumerate(y):
+                if x == 0:
+                    if idx_y < len(self.terrain_type)-1 and self.terrain_type[idx_y+1][idx_x] == 1:
+                        self.terrain_textures[idx_y][idx_x].append(self.border_down)
+                    if idx_y > 0 and self.terrain_type[idx_y-1][idx_x] == 1:
+                        self.terrain_textures[idx_y][idx_x].append(self.border_up)
+                    if idx_x < len(y)-1 and self.terrain_type[idx_y][idx_x+1] == 1:
+                        self.terrain_textures[idx_y][idx_x].append(self.border_right)
+                    if idx_x > 0 and self.terrain_type[idx_y][idx_x-1] == 1:
+                        self.terrain_textures[idx_y][idx_x].append(self.border_left)
+
+                    if random.random() > 0.98:
+                        self.terrain_textures[idx_y][idx_x].append(self.flower)

@@ -193,18 +193,11 @@ class parallel_env(ParallelEnv):
             for idx_x,x in enumerate(y):
                 for texture in self.terrain.terrain_textures[idx_y][idx_x]:
                     self.screen.blit(texture, self.camera.apply(self.terrain.draw_grid[idx_y][idx_x]))
-                if x == 0:
-                    if idx_y < len(self.terrain.terrain_type)-1 and self.terrain.terrain_type[idx_y+1][idx_x] == 1:
-                        self.screen.blit(self.terrain.border_down, self.camera.apply(self.terrain.draw_grid[idx_y][idx_x]))
-                    if idx_y > 0 and self.terrain.terrain_type[idx_y-1][idx_x] == 1:
-                        self.screen.blit(self.terrain.border_up, self.camera.apply(self.terrain.draw_grid[idx_y][idx_x]))
-                    if idx_x < len(y)-1 and self.terrain.terrain_type[idx_y][idx_x+1] == 1:
-                        self.screen.blit(self.terrain.border_right, self.camera.apply(self.terrain.draw_grid[idx_y][idx_x]))
-                    if idx_x > 0 and self.terrain.terrain_type[idx_y][idx_x-1] == 1:
-                        self.screen.blit(self.terrain.border_left, self.camera.apply(self.terrain.draw_grid[idx_y][idx_x]))
-                elif x == 1:
+                if x == 1:
+                    #UPDATE WATER ANIMATION TEXTURE
                     self.terrain.terrain_textures[idx_y][idx_x][0] = self.terrain.water[self.terrain.water_anim]
 
+        #WATER ANIMATION TIMER
         self.terrain.water_anim_timer += self.clock.get_time()
         if self.terrain.water_anim_timer >= 90:
             self.terrain.water_anim_timer = 0

@@ -95,8 +95,6 @@ class parallel_env(ParallelEnv):
             self.screen = pygame.Surface((const.SCREEN_WIDTH, const.SCREEN_HEIGHT))
 
 
-
-
     def step(self, actions):
         """
         step(action) takes in an action for each agent and should return the
@@ -155,6 +153,12 @@ class parallel_env(ParallelEnv):
         self.time_steps = 0
         observations = {agent_id: self.locate_agent(agent_id).get_observation(self.terrain) for idx, agent_id in enumerate(self.agents)}
         infos = {agent: {} for agent in self.agents}
+
+        # RLLIB
+        self.observation_spaces = Dict({agent_id: self.locate_agent(agent_id).observation_space for idx, agent_id in
+                                        enumerate(self.agents)})
+        self.action_spaces = Dict({agent_id: self.action_space(agent_id) for idx, agent_id in
+                                        enumerate(self.agents)})
 
         return observations, infos
 

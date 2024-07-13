@@ -8,7 +8,7 @@ from pettingzoo import ParallelEnv
 from pettingzoo.utils import parallel_to_aec, wrappers
 from terrarium.env.src import constants as const
 from terrarium.env.src.Camera import Camera
-from terrarium.env.src.entity import Entity
+from terrarium.env.src.agent import Agent
 from terrarium.env.src.terrain import Terrain
 import numpy as np
 import noise
@@ -176,7 +176,7 @@ class parallel_env(ParallelEnv):
             else:
                 sprite = self.water_agent_sprite
 
-            self.agents_list.append(Entity("agent_"+str(idx),x, y, sprite))
+            self.agents_list.append(Agent("agent_" + str(idx), x, y, sprite))
             self.terrain.agents[y][x] = 1
 
     @functools.lru_cache(maxsize=None)

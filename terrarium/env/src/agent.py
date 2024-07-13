@@ -1,7 +1,7 @@
 import numpy as np
 from gymnasium.spaces import MultiDiscrete,Box
 
-class Entity:
+class Agent:
     def __init__(self, agent_id, x, y, sprite, perception_range=1):
         self.x = x
         self.y = y

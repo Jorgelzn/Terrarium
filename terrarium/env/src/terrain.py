@@ -30,8 +30,8 @@ class Terrain:
         self.flower = pygame.image.load("../terrarium/env/data/flower.png")
         self.flower = pygame.transform.scale(self.flower, (block_size, block_size))
 
-        scale = 0.0001  # Adjust this for different terrain scales
-        octaves = 6
+        scale = 0.001  # Adjust this for different terrain scales
+        octaves = 8
         persistence = 2
 
         for y in range(0, world_size, block_size):
@@ -43,7 +43,7 @@ class Terrain:
                 self.terrain_textures[-1].append([])
                 self.draw_grid[-1].append(pygame.Rect(x, y, block_size, block_size))
                 self.agents[-1].append(0)
-                terrain_value = noise.pnoise2(x * scale, y * scale, octaves=octaves, persistence=persistence)
+                terrain_value = noise.pnoise2(x/block_size * scale, y/block_size * scale, octaves=octaves, persistence=persistence)
                 if terrain_value > 0:
                     self.terrain_type[-1].append(0)
                     self.terrain_textures[-1][-1].append(self.grass[random.randrange(len(self.grass))])

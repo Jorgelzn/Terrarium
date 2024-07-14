@@ -24,30 +24,33 @@ class Agent:
         self.obs_ids = np.zeros((2*self.perception_range+1,2*self.perception_range+1,2),dtype=int)
 
 
-    def check_action(self,action,agents):
-        if action == 0 and (self.y == 0 or agents[self.y-1][self.x] == 1):
-            return False
-        if action == 1 and (self.y + 1 == len(agents) or agents[self.y+1][self.x] == 1):
-            return False
-        if action == 2 and (self.x == 0 or agents[self.y][self.x-1] == 1):
-            return False
-        if action == 3 and (self.x + 1 == len(agents) or agents[self.y][self.x+1] == 1):
+    def check_action(self,agents,terrain):
+        if 0 < self.y < len(agents) and 0<self.x<len(agents) and agents[self.y][self.x]==0:
+            if ((self.type == "land" and terrain[self.y][self.x] == 0) or
+                    (self.type == "water" and terrain[self.y][self.x] == 1)):
+                return True
+        else:
             return False
 
-        return True
+    def do_action(self,action,agents,terrain):
 
-    def do_action(self,action,agents):
-        if self.check_action(action,agents):
-            agents[self.y][self.x] = 0
-            if action == 0:
-                self.move_up()
-            elif action == 1:
-                self.move_down()
-            elif action == 2:
-                self.move_left()
-            elif action == 3:
-                self.move_right()
+        previous_pos = (self.y, self.x)
+
+        if action == 0:
+            self.move_up()
+        elif action == 1:
+            self.move_down()
+        elif action == 2:
+            self.move_left()
+        elif action == 3:
+            self.move_right()
+
+        if self.check_action(agents,terrain):
+            agents[previous_pos[0]][previous_pos[1]] = 0
             agents[self.y][self.x] = 1
+        else:
+            self.y = previous_pos[0]
+            self.x = previous_pos[1]
 
 
     def move_up(self):

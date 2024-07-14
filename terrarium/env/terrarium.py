@@ -104,7 +104,7 @@ class parallel_env(ParallelEnv):
         else:
             for idx, agent in enumerate(self.agents_list):
                 action = actions["agent_" + str(idx)]
-                agent.do_action(action, self.terrain.agents)
+                agent.do_action(action, self.terrain.agents,self.terrain.terrain_type)
 
 
 

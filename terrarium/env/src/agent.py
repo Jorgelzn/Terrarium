@@ -25,8 +25,9 @@ class Agent:
 
 
     def check_action(self,agents,terrain):
-        if 0 < self.y < len(agents) and 0<self.x<len(agents) and agents[self.y][self.x]==0:
-            if ((self.type == "land" and terrain[self.y][self.x] == 0) or
+        if 0 < self.y < len(agents) and 0<self.x<len(agents) and agents[self.y][self.x]==0:     #GRID AND AGENTS CHECK
+
+            if ((self.type == "land" and terrain[self.y][self.x] == 0) or           #LAND TYPE CHECK
                     (self.type == "water" and terrain[self.y][self.x] == 1)):
                 return True
         else:

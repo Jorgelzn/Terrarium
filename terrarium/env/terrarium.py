@@ -73,14 +73,6 @@ class parallel_env(ParallelEnv):
         ## TERRAIN ##
         self.terrain = Terrain(self.world_size,const.BLOCK_SIZE)
 
-        ## SPRITES
-
-        self.ground_agent_sprite = pygame.image.load("../terrarium/env/data/treecko.png")
-        self.ground_agent_sprite = pygame.transform.scale(self.ground_agent_sprite, (const.BLOCK_SIZE, const.BLOCK_SIZE))
-
-        self.water_agent_sprite = pygame.image.load("../terrarium/env/data/mudkip.png")
-        self.water_agent_sprite = pygame.transform.scale(self.water_agent_sprite,(const.BLOCK_SIZE, const.BLOCK_SIZE))
-
         #RENDERING, revisar
         pygame.init()
         self.clock = pygame.time.Clock()
@@ -167,16 +159,19 @@ class parallel_env(ParallelEnv):
         for idx in range(len(self.agents)):
             x = random.randrange(0, self.voxels)
             y = random.randrange(0, self.voxels)
-            while self.terrain.agents[y][x] != 0:
+            if random.random() < 0.5:
+                agent_type = "land"
+            else:
+                agent_type = "water"
+
+            terrain_check = lambda y_check, x_check : True if ((self.terrain.terrain_type[y_check][x_check] == 0 and agent_type == "land") or
+                                     (self.terrain.terrain_type[y_check][x_check] == 1 and agent_type == "water")) else False
+
+            while self.terrain.agents[y][x] != 0 or not terrain_check(y,x):
                 x = random.randrange(0, self.voxels)
                 y = random.randrange(0, self.voxels)
 
-            if random.random() < 0.5:
-                sprite = self.ground_agent_sprite
-            else:
-                sprite = self.water_agent_sprite
-
-            self.agents_list.append(Agent("agent_" + str(idx), x, y, sprite))
+            self.agents_list.append(Agent("agent_" + str(idx), x, y, agent_type))
             self.terrain.agents[y][x] = 1
 
     @functools.lru_cache(maxsize=None)

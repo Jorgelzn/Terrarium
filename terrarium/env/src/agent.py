@@ -1,12 +1,23 @@
 import numpy as np
 from gymnasium.spaces import MultiDiscrete,Box
+import pygame
+from terrarium.env.src import constants as const
 
 class Agent:
-    def __init__(self, agent_id, x, y, sprite, perception_range=1):
+    def __init__(self, agent_id, x, y, type, perception_range=1):
         self.x = x
         self.y = y
         self.id = agent_id
-        self.sprite = sprite
+        self.type = type
+        if self.type == "water":
+            self.sprite = pygame.image.load("../terrarium/env/data/mudkip.png")
+            self.sprite = pygame.transform.scale(self.sprite,(const.BLOCK_SIZE, const.BLOCK_SIZE))
+        elif self.type == "land":
+            self.sprite = pygame.image.load("../terrarium/env/data/treecko.png")
+            self.sprite = pygame.transform.scale(self.sprite, (const.BLOCK_SIZE, const.BLOCK_SIZE))
+        else:
+            raise Exception
+
         self.perception_range = perception_range
         #self.observation_space = Box(low=-1, high=1, shape=(2*self.perception_range+1,2*self.perception_range+1,2), dtype=int)
         self.observation_space = Box(low=-1, high=1, shape=((2 * self.perception_range + 1)**2*2,), dtype=int)

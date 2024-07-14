@@ -74,7 +74,7 @@ class parallel_env(ParallelEnv):
         ## TERRAIN ##
         self.terrain = Terrain(self.world_size,const.BLOCK_SIZE)
 
-        self.food = [Food(0,0,"water")]
+        self.food = [Food(5,5,"water"),Food(12,12,"land")]
 
         #RENDERING, revisar
         pygame.init()
@@ -208,6 +208,10 @@ class parallel_env(ParallelEnv):
             else:
                 self.terrain.water_anim += 1
 
+        #DRAW FOOD
+        for food in self.food:
+            self.screen.blit(food.sprite, self.camera.apply(self.terrain.draw_grid[food.y][food.x]))
+
         # DRAW OBSERVATION SPACES
         for idx,agent in enumerate(self.agents_list):
             if self.render_obs:
@@ -222,10 +226,6 @@ class parallel_env(ParallelEnv):
         # DRAW AGENTS
         for idx,agent in enumerate(self.agents_list):
             self.screen.blit(agent.sprite, self.camera.apply(self.terrain.draw_grid[agent.y][agent.x]))
-
-        #DRAW FOOD
-        for food in self.food:
-            self.screen.blit(food.sprite, self.camera.apply(self.terrain.draw_grid[food.y][food.x]))
 
         # DRAW GRID
         #for row in range(len(self.draw_grid)):

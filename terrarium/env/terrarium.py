@@ -74,7 +74,7 @@ class parallel_env(ParallelEnv):
         ## TERRAIN ##
         self.terrain = Terrain(self.world_size,const.BLOCK_SIZE)
 
-        self.food = [Food(5,5,"water"),Food(12,12,"land")]
+        self.food = []
 
         #RENDERING, revisar
         pygame.init()
@@ -100,6 +100,9 @@ class parallel_env(ParallelEnv):
         - infos
         dicts where each dict looks like {agent_1: item_1, agent_2: item_2}
         """
+
+        self.spawn_food(0.8)
+
         # If a user passes in actions with no agents, then just return empty observations, etc.
         if not actions:
             self.agents = []
@@ -107,7 +110,7 @@ class parallel_env(ParallelEnv):
         else:
             for idx, agent in enumerate(self.agents_list):
                 action = actions["agent_" + str(idx)]
-                agent.do_action(action, self.terrain.agents,self.terrain.terrain_type)
+                agent.do_action(action, self.terrain.objects, self.terrain.terrain_type)
 
 
 
@@ -170,12 +173,31 @@ class parallel_env(ParallelEnv):
             terrain_check = lambda y_check, x_check : True if ((self.terrain.terrain_type[y_check][x_check] == 0 and agent_type == "land") or
                                      (self.terrain.terrain_type[y_check][x_check] == 1 and agent_type == "water")) else False
 
-            while self.terrain.agents[y][x] != 0 or not terrain_check(y,x):
+            while self.terrain.objects[y][x] != 0 or not terrain_check(y, x):
                 x = random.randrange(0, self.voxels)
                 y = random.randrange(0, self.voxels)
 
             self.agents_list.append(Agent("agent_" + str(idx), x, y, agent_type))
-            self.terrain.agents[y][x] = 1
+            self.terrain.objects[y][x] = 1
+
+    def spawn_food(self, prob):
+        if random.random() < prob:
+            x = random.randrange(0, self.voxels)
+            y = random.randrange(0, self.voxels)
+            if random.random() < 0.5:
+                food_type = "land"
+            else:
+                food_type = "water"
+
+            terrain_check = lambda y_check, x_check : True if ((self.terrain.terrain_type[y_check][x_check] == 0 and food_type == "land") or
+                                     (self.terrain.terrain_type[y_check][x_check] == 1 and food_type == "water")) else False
+
+            while self.terrain.objects[y][x] != 0 or not terrain_check(y, x):
+                x = random.randrange(0, self.voxels)
+                y = random.randrange(0, self.voxels)
+
+            self.food.append(Food(x,y,food_type))
+            self.terrain.objects[y][x] = 2
 
     @functools.lru_cache(maxsize=None)
     def observation_space(self, agent_id):

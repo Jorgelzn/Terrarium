@@ -85,7 +85,7 @@ class Agent:
                     self.obs_ids[idx_line][idx_col] = [-1,-1]
                 else:
                     obs.append(terrain.terrain_type[pos_y][pos_x])
-                    obs.append(terrain.agents[pos_y][pos_x])
+                    obs.append(terrain.objects[pos_y][pos_x])
                     self.obs_ids[idx_line][idx_col] = [pos_y,pos_x]
 
 

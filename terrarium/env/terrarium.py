@@ -50,7 +50,7 @@ class parallel_env(ParallelEnv):
         "render_fps": const.FPS
     }
 
-    def __init__(self, voxels, num_agents, render_mode="human",render_obs=False):
+    def __init__(self, voxels, num_agents, render_mode="human",render_obs=False, show_grid = False):
         """
         The init method takes in environment arguments and should define the following attributes:
         - possible_agents
@@ -73,6 +73,7 @@ class parallel_env(ParallelEnv):
 
         ## TERRAIN ##
         self.terrain = Terrain(self.world_size,const.BLOCK_SIZE)
+        self.show_grid = show_grid
 
         self.food = []
 
@@ -250,9 +251,10 @@ class parallel_env(ParallelEnv):
             self.screen.blit(agent.sprite, self.camera.apply(self.terrain.draw_grid[agent.y][agent.x]))
 
         # DRAW GRID
-        #for row in range(len(self.draw_grid)):
-        #    for colum, voxel in enumerate(self.draw_grid[row]):
-        #        pygame.draw.rect(self.screen, (255, 255, 255), self.camera.apply(voxel), 1)
+        if self.show_grid:
+            for row in range(len(self.terrain.draw_grid)):
+                for colum, voxel in enumerate(self.terrain.draw_grid[row]):
+                    pygame.draw.rect(self.screen, (255, 255, 255), self.camera.apply(voxel), 1)
 
     def render(self):
         """

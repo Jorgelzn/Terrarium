@@ -1,7 +1,13 @@
 # Terrarium :leaves:
 A natural ecosystem simulator for reinforcement learning agents.
 
-<img src="wallpaper.png" alt="drawing" width="800"/>
+<img src="wallpaper.png" alt="drawing" width="400"/>
+
+The environment is defined by a discrete space conformed by the positions in a nxn grid, so the movement of the agents is limited to up,down,left and right.
+
+As a reinforcement learning problem, this is a partially observed space, because each agent can only see in its own observation range, represented by the red squares.
+
+<img src="wallpaper2.png" alt="drawing" width="400"/>
 
 ### Installing depencies
 

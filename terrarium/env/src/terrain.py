@@ -29,6 +29,8 @@ class Terrain:
 
         self.flower = pygame.image.load("../terrarium/env/data/flower.png")
         self.flower = pygame.transform.scale(self.flower, (block_size, block_size))
+        self.flower2 = pygame.image.load("../terrarium/env/data/flower2.png")
+        self.flower2 = pygame.transform.scale(self.flower2, (block_size, block_size))
 
         scale = 0.001  # Adjust this for different terrain scales
         octaves = 8
@@ -57,7 +59,11 @@ class Terrain:
                 if x == 0:
 
                     if random.random() > 0.9:
-                        self.terrain_textures[idx_y][idx_x].append(self.flower)
+                        if random.random() > 0.5:
+                            texture = pygame.transform.rotate(self.flower, random.choices([0, 90, 180, 270], k=1)[0])
+                        else:
+                            texture = pygame.transform.rotate(self.flower2, random.choices([0, 90, 180, 270,], k=1)[0])
+                        self.terrain_textures[idx_y][idx_x].append(texture)
 
                     if idx_y < len(self.terrain_type)-1 and self.terrain_type[idx_y+1][idx_x] == 1:
                         self.terrain_textures[idx_y][idx_x].append(self.border_down)
@@ -67,3 +73,4 @@ class Terrain:
                         self.terrain_textures[idx_y][idx_x].append(self.border_right)
                     if idx_x > 0 and self.terrain_type[idx_y][idx_x-1] == 1:
                         self.terrain_textures[idx_y][idx_x].append(self.border_left)
+
